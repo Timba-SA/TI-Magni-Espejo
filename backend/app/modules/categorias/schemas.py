@@ -1,19 +1,29 @@
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+from sqlmodel import SQLModel
 
-def to_camel(string: str) -> str:
-    components = string.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
 
-class CategoriaCreate(BaseModel):
-    nombre: str = Field(..., min_length=1)
-    descripcion: Optional[str] = None
+# ─── Categoria ────────────────────────────────────────────────────────────────
 
-class CategoriaResponse(BaseModel):
-    id: int
+class CategoriaCreate(SQLModel):
+    parent_id: Optional[int] = None
     nombre: str
     descripcion: Optional[str] = None
-    fecha_alta: datetime = Field(..., alias="fechaAlta")
+    imagen_url: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True, alias_generator=to_camel)
+
+class CategoriaUpdate(SQLModel):
+    parent_id: Optional[int] = None
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    imagen_url: Optional[str] = None
+
+
+class CategoriaRead(SQLModel):
+    id: int
+    parent_id: Optional[int]
+    nombre: str
+    descripcion: Optional[str]
+    imagen_url: Optional[str]
+    created_at: datetime
+    updated_at: datetime

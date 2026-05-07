@@ -1,32 +1,17 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-
-class LoginRequest(BaseModel):
-    usernameOrEmail: str
-    password: str
-
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    nombre: str
-
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    nombre: str
-    rol: str
-    activo: bool
-
-class LoginResponse(BaseModel):
-    success: bool
-    message: str
-    token: str
-    user: UserResponse
-
-class UpdateRolRequest(BaseModel):
-    rol: str
-
-class UpdateEstadoRequest(BaseModel):
-    activo: bool
+# TODO: Implementar schemas Pydantic de auth
+#
+# Schemas requeridos:
+#
+# --- Request ---
+# - RegisterRequest: nombre, apellido, email, celular?, password
+# - LoginRequest: email, password
+# - RefreshRequest: refresh_token
+#
+# --- Response ---
+# - TokenResponse: access_token, refresh_token, token_type="bearer"
+# - RolResponse: codigo, nombre, descripcion
+# - UsuarioRolResponse: usuario_id, rol_codigo, expires_at?
+#
+# Validaciones:
+# - email: EmailStr (Pydantic v2)
+# - password: min 8 chars (validar en schema, hashear en service)

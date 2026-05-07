@@ -1,13 +1,18 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from app.core.database import Base
-
-class UserModel(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    nombre = Column(String, nullable=False)
-    rol = Column(String, nullable=False, default="Encargado")
-    activo = Column(Boolean, default=True, nullable=False)
+# TODO: Implementar modelos de auth
+#
+# Tablas del Dominio 1 - Identidad & Acceso:
+#
+# - Rol <<Catalog>>
+#   PK semántica: codigo VARCHAR(20)
+#   Valores seed: ADMIN | STOCK | PEDIDOS | CLIENT
+#
+# - UsuarioRol <<Link>>
+#   PK compuesta: (usuario_id, rol_codigo)
+#   FK: usuario_id → Usuario.id
+#   FK: rol_codigo → Rol.codigo
+#
+# - RefreshToken <<Session>>
+#   token_hash: CHAR(64) SHA-256 del refresh token, NUNCA plaintext
+#   revoked_at: NULL = activo
+#
+# Nota: Usuario y DireccionEntrega están en sus propios módulos.

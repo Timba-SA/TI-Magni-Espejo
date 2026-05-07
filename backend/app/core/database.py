@@ -1,23 +1,14 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
 
-# SQLite requires check_same_thread=False; PostgreSQL doesn't need it
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+# Usa DATABASE_URL si está definida, sino construye la URL a partir de las variables individuales
+engine = create_engine(settings.database_url, echo=True)
 
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
 
-Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def create_tables():
-    # Only creates tables if they do not exist
-    Base.metadata.create_all(bind=engine)
+def get_session():
+    with Session(engine) as session:
+        yield session

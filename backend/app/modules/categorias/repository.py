@@ -1,26 +1,29 @@
-from sqlalchemy.orm import Session
-from app.modules.categorias.models import CategoriaModel
+from typing import Optional
+from sqlmodel import Session, select
 
-class CategoriaRepository:
-    def __init__(self, db: Session):
-        self.db = db
+from app.core.repository import BaseRepository
+from app.modules.categorias.models import Categoria
 
-    def get_all(self) -> list[CategoriaModel]:
-        return self.db.query(CategoriaModel).order_by(CategoriaModel.nombre).all()
 
-    def get_by_id(self, categoria_id: int) -> CategoriaModel | None:
-        return self.db.query(CategoriaModel).filter(CategoriaModel.id == categoria_id).first()
+class CategoriaRepository(BaseRepository[Categoria]):
+    def __init__(self, session: Session):
+        super().__init__(Categoria, session)
 
-    def get_by_nombre(self, nombre: str) -> CategoriaModel | None:
-        return self.db.query(CategoriaModel).filter(CategoriaModel.nombre == nombre).first()
+    def get_by_nombre(self, nombre: str) -> Optional[Categoria]:
+        return self.session.exec(
+            select(Categoria).where(Categoria.nombre == nombre)
+        ).first()
 
-    def create(self, data: dict) -> CategoriaModel:
-        categoria = CategoriaModel(**data)
-        self.db.add(categoria)
-        return categoria
+    def get_all_activas(self) -> list[Categoria]:
+        """Retorna solo categorías no eliminadas (soft delete)."""
+        return self.session.exec(
+            select(Categoria).where(Categoria.deleted_at == None)
+        ).all()
 
-    def delete(self, categoria_id: int) -> CategoriaModel | None:
-        categoria = self.get_by_id(categoria_id)
-        if categoria:
-            self.db.delete(categoria)
-        return categoria
+    def get_by_parent(self, parent_id: Optional[int]) -> list[Categoria]:
+        return self.session.exec(
+            select(Categoria).where(
+                Categoria.parent_id == parent_id,
+                Categoria.deleted_at == None,
+            )
+        ).all()
