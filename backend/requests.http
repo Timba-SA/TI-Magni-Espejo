@@ -1,0 +1,68 @@
+### Health
+GET http://localhost:8000/health
+
+### Root
+GET http://localhost:8000/
+
+### Login OK
+POST http://localhost:8000/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "admin",
+  "password": "admin123"
+}
+
+### Login incorrecto
+POST http://localhost:8000/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "admin",
+  "password": "mal"
+}
+
+### Listar insumos
+GET http://localhost:8000/api/insumos
+
+### Listar insumos con filtro
+GET http://localhost:8000/api/insumos?categoria=Verduras
+
+### Crear insumo
+POST http://localhost:8000/api/insumos
+Content-Type: application/json
+
+{
+  "nombre": "Miel orgánica",
+  "descripcion": "Miel natural para recetas dulces",
+  "categoria": "Materia prima",
+  "unidadMedida": "kg",
+  "stockActual": 12,
+  "stockMinimo": 3,
+  "precioUnitario": 2500,
+  "estado": "Activo"
+}
+
+### Editar insumo completo
+PUT http://localhost:8000/api/insumos/1
+Content-Type: application/json
+
+{
+  "nombre": "Harina 000 Premium",
+  "descripcion": "Harina refinada para panificados",
+  "categoria": "Materia prima",
+  "unidadMedida": "kg",
+  "stockActual": 40,
+  "stockMinimo": 10,
+  "precioUnitario": 900,
+  "estado": "Activo"
+}
+
+### Baja lógica
+DELETE http://localhost:8000/api/insumos/1
+
+### Reactivar
+PATCH http://localhost:8000/api/insumos/1/reactivar
+
+### Stats
+GET http://localhost:8000/api/insumos/stats/resumen
