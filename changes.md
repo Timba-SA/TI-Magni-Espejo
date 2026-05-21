@@ -13,13 +13,9 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 023-backend-impl-pedidos | Done | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance, verification |
-| 025-backend-impl-admin-stock | Done | Gestión de Stock y Disponibilidad (Admin) | proposal, design, tasks, acceptance, verification |
 | 029-frontend-store-catalogo | Draft | Catálogo de Productos Premium en el Frontend | proposal, design, tasks, acceptance |
 | 030-frontend-store-carrito | Draft | Sistema de Carrito de Compras en el Frontend | proposal, design, tasks, acceptance |
 | 031-frontend-store-checkout | Draft | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance |
-| 026-backend-impl-admin-metrics | Done | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance, verification |
-| 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel | proposal, design, tasks, acceptance, verification |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
@@ -27,11 +23,13 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 025-backend-impl-admin-stock | Done | Gestión de Stock y Disponibilidad (Admin) |
+| 026-backend-impl-admin-metrics | Done | Dashboard de Métricas Administrativas |
+| 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel |
+| 023-backend-impl-pedidos | Done | Implementación de Pedidos y Máquina de Estados (FSM) |
 | 024-backend-impl-pagos | Done | Integración con MercadoPago (Idempotency y Webhook) |
 | 022-backend-impl-direcciones | Done | Implementación de Direcciones de Entrega |
-
 | 021-backend-impl-productos | Done | Implementación de Productos y Catálogo |
-
 | 028-backend-impl-user-roles | Done | Edición de Roles de Usuario (Backend y Frontend UI) |
 | 000-project-baseline | Done | Documentación del estado actual del proyecto The Food Store |
 | 002-frontend-landing-premium | Done | Desarrollo de la UI pública premium con Tailwind y React Router |
