@@ -13,7 +13,6 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 031-frontend-store-checkout | Done | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance, verification |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
@@ -21,6 +20,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 031-frontend-store-checkout | Done | Flujo de Checkout y Confirmación en el Frontend |
 | 030-frontend-store-carrito | Done | Sistema de Carrito de Compras en el Frontend |
 | 029-frontend-store-catalogo | Done | Catálogo de Productos Premium en el Frontend |
 | 025-backend-impl-admin-stock | Done | Gestión de Stock y Disponibilidad (Admin) |
