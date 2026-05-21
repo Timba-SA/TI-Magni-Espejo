@@ -18,7 +18,7 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 | 029-frontend-store-catalogo | Draft | Catálogo de Productos Premium en el Frontend | proposal, design, tasks, acceptance |
 | 030-frontend-store-carrito | Draft | Sistema de Carrito de Compras en el Frontend | proposal, design, tasks, acceptance |
 | 031-frontend-store-checkout | Draft | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance |
-| 026-backend-impl-admin-metrics | Draft | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance |
+| 026-backend-impl-admin-metrics | Done | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance, verification |
 | 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel | proposal, design, tasks, acceptance, verification |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)

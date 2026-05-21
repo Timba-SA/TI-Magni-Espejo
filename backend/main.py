@@ -15,6 +15,7 @@ from app.modules.usuarios.router import router as usuarios_router
 from app.modules.direcciones.router import router as direcciones_router
 from app.modules.pedidos.router import router as pedidos_router
 from app.modules.pagos.router import router as pagos_router
+from app.modules.admin.router import router as admin_router
 
 
 @asynccontextmanager
@@ -51,6 +52,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
 app.include_router(direcciones_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
 
 # Dominio 2 - Catálogo de Productos
 app.include_router(categorias_router, prefix="/api/v1")
