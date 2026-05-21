@@ -1,4 +1,4 @@
-import type { Ingrediente, IngredienteFormData } from "../types/insumo.types";
+import type { Ingrediente, IngredienteFormData, UnidadMedida } from "../types/insumo.types";
 import { fetchApi } from "@/shared/api/apiClient";
 
 // Respuesta paginada del backend
@@ -34,6 +34,14 @@ export async function getInsumoById(id: number): Promise<Ingrediente | undefined
   }
 }
 
+export async function getUnidadesMedida(): Promise<UnidadMedida[]> {
+  try {
+    return await fetchApi<UnidadMedida[]>("/unidades-medida/");
+  } catch {
+    return [];
+  }
+}
+
 export async function createInsumo(data: IngredienteFormData): Promise<Ingrediente> {
   return fetchApi<Ingrediente>("/ingredientes", {
     method: "POST",
@@ -41,6 +49,10 @@ export async function createInsumo(data: IngredienteFormData): Promise<Ingredien
       nombre: data.nombre,
       descripcion: data.descripcion || null,
       es_alergeno: data.es_alergeno,
+      unidad_medida_id: data.unidad_medida_id,
+      stock_actual: Number(data.stock_actual) || 0,
+      stock_minimo: Number(data.stock_minimo) || 0,
+      costo_unitario: Number(data.costo_unitario) || 0,
     }),
   });
 }
@@ -56,6 +68,10 @@ export async function updateInsumo(
         nombre: data.nombre,
         descripcion: data.descripcion || null,
         es_alergeno: data.es_alergeno,
+        unidad_medida_id: data.unidad_medida_id,
+        stock_actual: Number(data.stock_actual) !== undefined ? Number(data.stock_actual) : undefined,
+        stock_minimo: Number(data.stock_minimo) !== undefined ? Number(data.stock_minimo) : undefined,
+        costo_unitario: Number(data.costo_unitario) !== undefined ? Number(data.costo_unitario) : undefined,
       }),
     });
   } catch {

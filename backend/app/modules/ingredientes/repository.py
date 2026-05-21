@@ -1,6 +1,7 @@
 from typing import Optional
 
 from sqlmodel import Session, select, func
+from sqlalchemy.orm import selectinload
 
 from app.core.repository import BaseRepository
 from app.modules.ingredientes.models import Ingrediente
@@ -12,18 +13,22 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
 
     def get_activo_by_id(self, id: int) -> Optional[Ingrediente]:
         return self.session.exec(
-            select(Ingrediente).where(
+            select(Ingrediente)
+            .where(
                 Ingrediente.id == id,
                 Ingrediente.deleted_at == None,
             )
+            .options(selectinload(Ingrediente.unidad_medida))
         ).first()
 
     def get_activo_by_nombre(self, nombre: str) -> Optional[Ingrediente]:
         return self.session.exec(
-            select(Ingrediente).where(
+            select(Ingrediente)
+            .where(
                 Ingrediente.nombre == nombre,
                 Ingrediente.deleted_at == None,
             )
+            .options(selectinload(Ingrediente.unidad_medida))
         ).first()
 
     def list_with_filters(
@@ -45,6 +50,10 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
         total = self.session.exec(count_stmt).one()
 
         # Aplicar paginación
-        items = self.session.exec(base.offset(skip).limit(limit)).all()
+        items = self.session.exec(
+            base.options(selectinload(Ingrediente.unidad_medida))
+            .offset(skip)
+            .limit(limit)
+        ).all()
 
         return list(items), total

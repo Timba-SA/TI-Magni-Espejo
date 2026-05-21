@@ -4,30 +4,16 @@ from typing import Optional
 from sqlmodel import SQLModel, Field
 
 from app.modules.categorias.schemas import CategoriaRead
-from app.modules.ingredientes.schemas import IngredienteRead
 
 
 
 # ─── UnidadMedida ─────────────────────────────────────────────────────────────
 
-class UnidadMedidaCreate(SQLModel):
-    nombre: str
-    simbolo: str
-    tipo: str  # masa | volumen | unidad | area
-
-
-class UnidadMedidaUpdate(SQLModel):
-    nombre: Optional[str] = None
-    simbolo: Optional[str] = None
-    tipo: Optional[str] = None
-
-
-class UnidadMedidaRead(SQLModel):
-    id: int
-    nombre: str
-    simbolo: str
-    tipo: str
-    created_at: datetime
+from app.modules.productos.schemas_medida import (
+    UnidadMedidaCreate,
+    UnidadMedidaUpdate,
+    UnidadMedidaRead,
+)
 
 
 # ─── ProductoCategoria ────────────────────────────────────────────────────────
@@ -58,7 +44,7 @@ class ProductoIngredienteRead(SQLModel):
     unidad_medida_id: Optional[int] = None
     unidad_medida: Optional[UnidadMedidaRead] = None
     es_removible: bool
-    ingrediente: Optional[IngredienteRead] = None
+    ingrediente: Optional["IngredienteRead"] = None
 
 
 # ─── Producto ─────────────────────────────────────────────────────────────────
@@ -109,3 +95,8 @@ class ProductoReadDetalle(ProductoRead):
     """Incluye categorías e ingredientes anidados."""
     categorias: list[ProductoCategoriaRead] = []
     ingredientes: list[ProductoIngredienteRead] = []
+
+
+from app.modules.ingredientes.schemas import IngredienteRead
+ProductoIngredienteRead.model_rebuild()
+ProductoReadDetalle.model_rebuild()

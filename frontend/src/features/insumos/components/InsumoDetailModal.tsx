@@ -78,10 +78,42 @@ export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalPr
 
           <DetailRow label="ID" value={`#${insumo.id}`} />
           <DetailRow
+            label="Stock Actual"
+            value={
+              <div className="flex flex-col items-end gap-1">
+                <span className="font-mono font-bold">
+                  {Number(insumo.stock_actual).toFixed(3)} {insumo.unidad_medida?.simbolo ?? "u"}
+                </span>
+                {insumo.stock_actual <= insumo.stock_minimo && insumo.stock_minimo > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
+                    <AlertTriangle size={8} />
+                    Stock Crítico
+                  </span>
+                )}
+              </div>
+            }
+          />
+          <DetailRow
+            label="Stock Mínimo Alerta"
+            value={
+              <span className="font-mono">
+                {Number(insumo.stock_minimo).toFixed(3)} {insumo.unidad_medida?.simbolo ?? "u"}
+              </span>
+            }
+          />
+          <DetailRow
+            label="Costo Unitario"
+            value={
+              <span className="font-mono">
+                $ {Number(insumo.costo_unitario).toFixed(2)} / {insumo.unidad_medida?.simbolo ?? "u"}
+              </span>
+            }
+          />
+          <DetailRow
             label="Alérgeno"
             value={
               insumo.es_alergeno ? (
-                <span className="inline-flex items-center gap-1 text-amber-400 text-xs">
+                <span className="inline-flex items-center gap-1 text-red-400 text-xs">
                   <AlertTriangle size={11} /> Sí, es alérgeno
                 </span>
               ) : (
