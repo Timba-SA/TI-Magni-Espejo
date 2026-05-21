@@ -14,6 +14,7 @@ from app.modules.productos.router import router as productos_router
 from app.modules.usuarios.router import router as usuarios_router
 from app.modules.direcciones.router import router as direcciones_router
 from app.modules.pedidos.router import router as pedidos_router
+from app.modules.pagos.router import router as pagos_router
 
 
 @asynccontextmanager
@@ -58,6 +59,7 @@ app.include_router(productos_router, prefix="/api/v1")
 
 # Dominio 3 - Gestión de Pedidos
 app.include_router(pedidos_router, prefix="/api/v1")
+app.include_router(pagos_router, prefix="/api/v1")
 
 
 

@@ -1,22 +1,32 @@
-# TODO: Implementar schemas de pagos
-#
-# --- Request ---
-# - IniciarPagoRequest: pedido_id, forma_pago_codigo
-#   (para MERCADOPAGO: genera preference_id del SDK)
-#
-# --- Webhook IPN (MercadoPago) ---
-# - WebhookPayload: topic, resource  ← estructura de MP
-#
-# --- Response ---
-# - PagoResponse: id, pedido_id, mp_payment_id, mp_status, mp_status_detail,
-#                 external_reference, transaction_amount, payment_method_id,
-#                 created_at, updated_at
-# - PreferenceResponse: preference_id, init_point
-#   (URL de checkout generada por SDK de MP)
-#
-# Mapeo estados MP → Food Store:
-# approved   → pedido CONFIRMADO (via FSM pedidos)
-# pending    → pedido sigue PENDIENTE
-# rejected   → HTTP 402, pedido sigue PENDIENTE
-# in_process → pedido sigue PENDIENTE
-# cancelled  → cliente puede reintentar o cancelar pedido
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional, Dict, Any
+from sqlmodel import SQLModel
+
+
+class IniciarPagoRequest(SQLModel):
+    pedido_id: int
+
+
+class WebhookPayload(SQLModel):
+    action: Optional[str] = None
+    type: Optional[str] = None
+    data: Optional[Dict[str, Any]] = None
+
+
+class PagoResponse(SQLModel):
+    id: int
+    pedido_id: int
+    mp_payment_id: Optional[int] = None
+    mp_status: str
+    mp_status_detail: Optional[str] = None
+    external_reference: str
+    transaction_amount: Decimal
+    payment_method_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PreferenceResponse(SQLModel):
+    preference_id: str
+    init_point: str

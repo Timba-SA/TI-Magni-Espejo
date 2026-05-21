@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@foodstore.com"
     ADMIN_PASSWORD: str  # Obligatorio. Sin default: el seeder no corre sin esta variable.
 
+    # MercadoPago Config
+    MP_ACCESS_TOKEN: Optional[str] = None
+    MP_WEBHOOK_SECRET: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

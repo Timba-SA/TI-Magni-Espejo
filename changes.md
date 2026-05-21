@@ -15,7 +15,6 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 |---|---|---|---|
 | 015-frontend-store-checkout | Draft | Flujo de checkout de la tienda en el Frontend | proposal, design, tasks, acceptance |
 | 023-backend-impl-pedidos | Done | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance, verification |
-| 024-backend-impl-pagos | Draft | Integración con MercadoPago (Idempotency y Webhook) | proposal, design, tasks, acceptance |
 | 025-backend-impl-admin-stock | Draft | Gestión de Stock y Disponibilidad (Admin) | proposal, design, tasks, acceptance |
 | 026-backend-impl-admin-metrics | Draft | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance |
 | 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel | proposal, design, tasks, acceptance, verification |
@@ -26,7 +25,9 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 024-backend-impl-pagos | Done | Integración con MercadoPago (Idempotency y Webhook) |
 | 022-backend-impl-direcciones | Done | Implementación de Direcciones de Entrega |
+
 | 021-backend-impl-productos | Done | Implementación de Productos y Catálogo |
 
 | 028-backend-impl-user-roles | Done | Edición de Roles de Usuario (Backend y Frontend UI) |
