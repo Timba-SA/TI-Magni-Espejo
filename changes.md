@@ -13,7 +13,6 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 029-frontend-store-catalogo | Draft | Catálogo de Productos Premium en el Frontend | proposal, design, tasks, acceptance |
 | 030-frontend-store-carrito | Draft | Sistema de Carrito de Compras en el Frontend | proposal, design, tasks, acceptance |
 | 031-frontend-store-checkout | Draft | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance |
 
@@ -23,6 +22,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 029-frontend-store-catalogo | Done | Catálogo de Productos Premium en el Frontend |
 | 025-backend-impl-admin-stock | Done | Gestión de Stock y Disponibilidad (Admin) |
 | 026-backend-impl-admin-metrics | Done | Dashboard de Métricas Administrativas |
 | 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel |

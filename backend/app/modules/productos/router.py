@@ -51,7 +51,7 @@ def eliminar_unidad_medida(id: int, session: SessionDep):
 
 # ─── Producto endpoints ───────────────────────────────────────────────────────
 
-@router.get("/productos/", response_model=list[ProductoRead], status_code=status.HTTP_200_OK)
+@router.get("/productos/", response_model=list[ProductoReadDetalle], status_code=status.HTTP_200_OK)
 def listar_productos(
     session: SessionDep,
     offset: Annotated[int, Query(ge=0, description="Cantidad de registros a omitir")] = 0,

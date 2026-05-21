@@ -14,11 +14,16 @@ from app.modules.usuarios.models import Usuario
 from app.modules.productos.models import UnidadMedida
 
 def seed_roles(session: Session):
-    roles = ["ADMIN", "STOCK", "PEDIDOS", "CLIENT"]
-    for codigo in roles:
+    roles = [
+        ("ADMIN", "Administrador", "Acceso total al sistema"),
+        ("STOCK", "Gestor de Stock", "Gestión de insumos y productos"),
+        ("PEDIDOS", "Gestor de Pedidos", "Gestión del flujo de pedidos"),
+        ("CLIENT", "Cliente", "Acceso a la tienda pública")
+    ]
+    for codigo, nombre, descripcion in roles:
         existing = session.get(Rol, codigo)
         if not existing:
-            session.add(Rol(codigo=codigo))
+            session.add(Rol(codigo=codigo, nombre=nombre, descripcion=descripcion))
             print(f"Rol '{codigo}' creado.")
     session.commit()
 
@@ -122,6 +127,8 @@ def main():
     import app.modules.productos.models   # Producto, ProductoCategoria, etc.
     import app.modules.categorias.models  # Categoria
     import app.modules.ingredientes.models  # Ingrediente
+    import app.modules.direcciones.models  # DireccionEntrega
+    import app.modules.pagos.models        # Pago
 
     SQLModel.metadata.create_all(engine)
     
