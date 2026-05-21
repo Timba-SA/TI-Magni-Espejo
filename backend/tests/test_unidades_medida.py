@@ -31,16 +31,20 @@ def override_get_session():
 def override_get_current_user():
     return {"sub": 1, "email": "admin@test.com", "roles": ["ADMIN"]}
 
-app.dependency_overrides[get_session] = override_get_session
-app.dependency_overrides[get_current_user] = override_get_current_user
-
 client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def prepare_db():
+    # Registrar overrides de forma aislada para este set de tests
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    
     SQLModel.metadata.create_all(engine)
     yield
     SQLModel.metadata.drop_all(engine)
+    
+    # Limpiar overrides al finalizar para no interferir con otros tests
+    app.dependency_overrides.clear()
 
 
 def test_crear_unidad_medida_satisfactorio():

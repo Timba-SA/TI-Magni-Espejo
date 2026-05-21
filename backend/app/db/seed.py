@@ -11,6 +11,7 @@ from app.core.security import get_password_hash
 from app.modules.auth.models import Rol, UsuarioRol
 from app.modules.pedidos.models import EstadoPedido, FormaPago
 from app.modules.usuarios.models import Usuario
+from app.modules.productos.models import UnidadMedida
 
 def seed_roles(session: Session):
     roles = ["ADMIN", "STOCK", "PEDIDOS", "CLIENT"]
@@ -59,6 +60,29 @@ def seed_formas_pago(session: Session):
             print(f"FormaPago '{codigo}' creada.")
     session.commit()
 
+def seed_unidades_medida(session: Session):
+    unidades = [
+        ("Kilogramo", "kg", "masa"),
+        ("Gramo", "g", "masa"),
+        ("Litro", "L", "volumen"),
+        ("Mililitro", "mL", "volumen"),
+        ("Unidad", "u", "unidad"),
+        ("Docena", "doc", "unidad"),
+        ("Metro cuadrado", "m²", "area")
+    ]
+    for nombre, simbolo, tipo in unidades:
+        existing = session.exec(
+            select(UnidadMedida).where(UnidadMedida.simbolo == simbolo)
+        ).first()
+        if not existing:
+            session.add(UnidadMedida(
+                nombre=nombre,
+                simbolo=simbolo,
+                tipo=tipo
+            ))
+            print(f"UnidadMedida '{simbolo}' ({nombre}) creada.")
+    session.commit()
+
 def seed_admin(session: Session):
     email = settings.ADMIN_EMAIL
     statement = select(Usuario).where(Usuario.email == email)
@@ -105,6 +129,7 @@ def main():
         seed_roles(session)
         seed_estados(session)
         seed_formas_pago(session)
+        seed_unidades_medida(session)
         seed_admin(session)
         
     print("Seed finalizado exitosamente.")
