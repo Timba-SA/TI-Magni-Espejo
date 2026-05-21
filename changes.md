@@ -14,7 +14,6 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
 | 015-frontend-store-checkout | Draft | Flujo de checkout de la tienda en el Frontend | proposal, design, tasks, acceptance |
-| 021-backend-impl-productos | Done | Implementación de Productos y Catálogo | proposal, design, tasks, acceptance, verification |
 | 022-backend-impl-direcciones | Draft | Implementación de Direcciones de Entrega | proposal, design, tasks, acceptance |
 | 023-backend-impl-pedidos | Draft | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance |
 | 024-backend-impl-pagos | Draft | Integración con MercadoPago (Idempotency y Webhook) | proposal, design, tasks, acceptance |
@@ -28,6 +27,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 021-backend-impl-productos | Done | Implementación de Productos y Catálogo |
 | 028-backend-impl-user-roles | Done | Edición de Roles de Usuario (Backend y Frontend UI) |
 | 000-project-baseline | Done | Documentación del estado actual del proyecto The Food Store |
 | 002-frontend-landing-premium | Done | Desarrollo de la UI pública premium con Tailwind y React Router |
