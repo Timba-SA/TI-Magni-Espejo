@@ -2,7 +2,25 @@ from typing import Optional
 from sqlmodel import Session, select
 
 from app.core.repository import BaseRepository
-from app.modules.productos.models import Producto, ProductoCategoria, ProductoIngrediente
+from app.modules.productos.models import Producto, ProductoCategoria, ProductoIngrediente, UnidadMedida
+
+
+class UnidadMedidaRepository(BaseRepository[UnidadMedida]):
+    def __init__(self, session: Session):
+        super().__init__(UnidadMedida, session)
+
+    def get_by_simbolo(self, simbolo: str) -> Optional[UnidadMedida]:
+        return self.session.exec(
+            select(UnidadMedida).where(UnidadMedida.simbolo == simbolo)
+        ).first()
+
+    def get_by_nombre(self, nombre: str) -> Optional[UnidadMedida]:
+        return self.session.exec(
+            select(UnidadMedida).where(UnidadMedida.nombre == nombre)
+        ).first()
+
+    def get_all(self) -> list[UnidadMedida]:
+        return self.session.exec(select(UnidadMedida)).all()
 
 
 class ProductoRepository(BaseRepository[Producto]):

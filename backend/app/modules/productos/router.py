@@ -9,15 +9,47 @@ from app.modules.productos.schemas import (
     ProductoUpdate,
     ProductoRead,
     ProductoReadDetalle,
+    UnidadMedidaCreate,
+    UnidadMedidaUpdate,
+    UnidadMedidaRead,
 )
-from app.modules.productos.service import ProductoService
+from app.modules.productos.service import ProductoService, UnidadMedidaService
 
-router = APIRouter(prefix="/productos", tags=["Productos"])
+router = APIRouter(tags=["Productos"])
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-@router.get("/", response_model=list[ProductoRead], status_code=status.HTTP_200_OK)
+# ─── UnidadMedida endpoints ───────────────────────────────────────────────────
+
+@router.get("/unidades-medida/", response_model=list[UnidadMedidaRead], status_code=status.HTTP_200_OK)
+def listar_unidades_medida(session: SessionDep):
+    return UnidadMedidaService(session).listar()
+
+
+@router.get("/unidades-medida/{id}", response_model=UnidadMedidaRead, status_code=status.HTTP_200_OK)
+def obtener_unidad_medida(id: int, session: SessionDep):
+    return UnidadMedidaService(session).obtener(id)
+
+
+@router.post("/unidades-medida/", response_model=UnidadMedidaRead, status_code=status.HTTP_200_OK)
+def crear_unidad_medida(data: UnidadMedidaCreate, session: SessionDep):
+    return UnidadMedidaService(session).crear(data)
+
+
+@router.patch("/unidades-medida/{id}", response_model=UnidadMedidaRead, status_code=status.HTTP_200_OK)
+def actualizar_unidad_medida(id: int, data: UnidadMedidaUpdate, session: SessionDep):
+    return UnidadMedidaService(session).actualizar(id, data)
+
+
+@router.delete("/unidades-medida/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_unidad_medida(id: int, session: SessionDep):
+    UnidadMedidaService(session).eliminar(id)
+
+
+# ─── Producto endpoints ───────────────────────────────────────────────────────
+
+@router.get("/productos/", response_model=list[ProductoRead], status_code=status.HTTP_200_OK)
 def listar_productos(
     session: SessionDep,
     offset: Annotated[int, Query(ge=0, description="Cantidad de registros a omitir")] = 0,
@@ -36,21 +68,34 @@ def listar_productos(
     return ProductoService(session).listar(offset=offset, limit=limit, disponible=disponible, include_deleted=include_deleted)
 
 
-@router.get("/{id}", response_model=ProductoReadDetalle, status_code=status.HTTP_200_OK)
+@router.get("/productos/{id}", response_model=ProductoReadDetalle, status_code=status.HTTP_200_OK)
 def obtener_producto(id: int, session: SessionDep):
     return ProductoService(session).obtener(id)
 
 
-@router.post("/", response_model=ProductoRead, status_code=status.HTTP_201_CREATED)
+@router.post("/productos/", response_model=ProductoRead, status_code=status.HTTP_200_OK)
 def crear_producto(data: ProductoCreate, session: SessionDep):
     return ProductoService(session).crear(data)
 
 
-@router.patch("/{id}", response_model=ProductoRead, status_code=status.HTTP_200_OK)
+@router.patch("/productos/{id}", response_model=ProductoRead, status_code=status.HTTP_200_OK)
 def actualizar_producto(id: int, data: ProductoUpdate, session: SessionDep):
     return ProductoService(session).actualizar(id, data)
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/productos/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_producto(id: int, session: SessionDep):
     ProductoService(session).eliminar(id)
+
+
+# ─── Ingredientes de un Producto ──────────────────────────────────────────────
+
+from app.modules.productos.schemas import ProductoIngredienteCreate, ProductoIngredienteRead
+
+@router.post(
+    "/productos/{id}/ingredientes",
+    response_model=ProductoIngredienteRead,
+    status_code=status.HTTP_200_OK,
+)
+def asociar_ingrediente(id: int, data: ProductoIngredienteCreate, session: SessionDep):
+    return ProductoService(session).asociar_ingrediente(id, data)
