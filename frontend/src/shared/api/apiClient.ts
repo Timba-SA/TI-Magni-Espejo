@@ -50,6 +50,11 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
     throw new Error(errorMessage);
   }
 
+  // 204 No Content → no hay body, no intentar parsear JSON
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     return response.json() as Promise<T>;

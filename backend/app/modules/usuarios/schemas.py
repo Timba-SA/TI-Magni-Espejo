@@ -51,3 +51,17 @@ class UsuarioListResponse(SQLModel):
     total: int
     skip: int
     limit: int
+
+
+class UsuarioCreateRequest(SQLModel):
+    """
+    Datos requeridos para dar de alta administrativamente a un nuevo usuario.
+    Exclusivo para uso del ADMIN en el panel de control.
+    """
+    nombre: str
+    apellido: str
+    email: str
+    celular: Optional[str] = None
+    password: str
+    roles: list[str]
+

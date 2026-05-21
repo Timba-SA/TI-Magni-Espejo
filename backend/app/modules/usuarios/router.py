@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
@@ -12,7 +12,9 @@ from app.modules.usuarios.schemas import (
     UsuarioRoleUpdateRequest,
     UsuarioUpdateRequest,
     UsuarioListResponse,
+    UsuarioCreateRequest,
 )
+
 from app.modules.usuarios.service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -43,10 +45,12 @@ def get_all(
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     include_deleted: Annotated[bool, Query(description="Incluir usuarios eliminados (solo admin)")] = False,
+    rol: Annotated[Optional[str], Query(description="Filtrar por rol")] = None,
 ):
     """Lista todos los usuarios. Incluye activos y pausados. Solo ADMIN."""
-    items, total = UsuarioService(session).get_all(skip, limit, include_deleted)
+    items, total = UsuarioService(session).get_all(skip, limit, include_deleted, rol)
     return UsuarioListResponse(items=items, total=total, skip=skip, limit=limit)
+
 
 @router.get("/exportar", status_code=status.HTTP_200_OK)
 def exportar_usuarios(session: SessionDep, _admin: AdminOnly):
@@ -78,3 +82,26 @@ def eliminar_usuario(id: int, session: SessionDep, current_user: AdminOnly):
     """Soft delete de un usuario. El registro se archiva (deleted_at). Solo ADMIN. No puede aplicarse a uno mismo."""
     admin_id = current_user["sub"]
     UsuarioService(session).eliminar(id, admin_id)
+
+
+@router.post("/", response_model=UsuarioDetailResponse, status_code=status.HTTP_201_CREATED)
+def crear_usuario(
+    data: UsuarioCreateRequest,
+    session: SessionDep,
+    current_user: AdminOnly,
+):
+    """Permite a un administrador crear un nuevo usuario con roles asignados. Solo ADMIN."""
+    admin_id = current_user["sub"]
+    return UsuarioService(session).crear_administrativo(data, admin_id)
+
+
+@router.patch("/{id}/restore", response_model=UsuarioDetailResponse, status_code=status.HTTP_200_OK)
+def restaurar_usuario(
+    id: int,
+    session: SessionDep,
+    current_user: AdminOnly,
+):
+    """Restaura un usuario eliminado lógicamente (soft delete). Solo ADMIN."""
+    admin_id = current_user["sub"]
+    return UsuarioService(session).restaurar(id, admin_id)
+

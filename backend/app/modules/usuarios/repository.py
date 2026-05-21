@@ -26,12 +26,18 @@ class UsuarioRepository(BaseRepository[Usuario]):
         ).all()
 
     def get_all_active_paginated(
-        self, skip: int, limit: int, include_deleted: bool = False
+        self, skip: int, limit: int, include_deleted: bool = False, rol: Optional[str] = None
     ) -> tuple[list[Usuario], int]:
         from sqlmodel import func
+        from app.modules.auth.models import UsuarioRol
+        
         query = select(Usuario)
+        if rol:
+            query = query.join(UsuarioRol, UsuarioRol.usuario_id == Usuario.id).where(UsuarioRol.rol_codigo == rol)
         if not include_deleted:
             query = query.where(Usuario.deleted_at == None)  # noqa: E711
+            
         total = self.session.exec(select(func.count()).select_from(query.subquery())).one()
         items = self.session.exec(query.offset(skip).limit(limit)).all()
         return items, total
+

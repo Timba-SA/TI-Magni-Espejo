@@ -15,10 +15,13 @@ from app.modules.productos.models import UnidadMedida
 
 def seed_roles(session: Session):
     roles = [
-        ("ADMIN", "Administrador", "Acceso total al sistema"),
-        ("STOCK", "Gestor de Stock", "Gestión de insumos y productos"),
-        ("PEDIDOS", "Gestor de Pedidos", "Gestión del flujo de pedidos"),
-        ("CLIENT", "Cliente", "Acceso a la tienda pública")
+        ("ADMIN",     "Administrador",      "Acceso total al sistema"),
+        ("ENCARGADO", "Encargado",          "Supervisor general del local"),
+        ("CAJERO",    "Cajero",             "Gestión de caja y cobros"),
+        ("COCINERO",  "Cocinero",           "Preparación de pedidos en cocina"),
+        ("STOCK",     "Gestor de Stock",    "Gestión de insumos y productos"),
+        ("PEDIDOS",   "Gestor de Pedidos",  "Gestión del flujo de pedidos"),
+        ("CLIENT",    "Cliente",            "Acceso a la tienda pública"),
     ]
     for codigo, nombre, descripcion in roles:
         existing = session.get(Rol, codigo)

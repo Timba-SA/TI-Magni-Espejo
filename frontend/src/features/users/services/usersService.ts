@@ -3,6 +3,7 @@ import type {
   UsuarioDetailResponse,
   UsuarioResponse,
   UsuarioUpdateRequest,
+  UsuarioCreateRequest,
 } from "../types/user.types";
 
 /** Perfil propio del usuario autenticado (incluye roles). */
@@ -20,9 +21,26 @@ export async function updateMe(
   });
 }
 
-/** Lista todos los usuarios. Solo ADMIN. */
-export async function getUsuarios(skip: number = 0, limit: number = 20): Promise<import("../types/user.types").UsuarioListResponse> {
-  return fetchApi<import("../types/user.types").UsuarioListResponse>(`/usuarios/?skip=${skip}&limit=${limit}`);
+/** Lista todos los usuarios con filtros opcionales. Solo ADMIN. */
+export async function getUsuarios(
+  skip: number = 0,
+  limit: number = 20,
+  rol?: string,
+  includeDeleted: boolean = false
+): Promise<import("../types/user.types").UsuarioListResponse> {
+  let url = `/usuarios/?skip=${skip}&limit=${limit}&include_deleted=${includeDeleted}`;
+  if (rol) {
+    url += `&rol=${encodeURIComponent(rol)}`;
+  }
+  return fetchApi<import("../types/user.types").UsuarioListResponse>(url);
+}
+
+/** Crea un nuevo usuario administrativamente. Solo ADMIN. */
+export async function crearUsuario(data: UsuarioCreateRequest): Promise<UsuarioDetailResponse> {
+  return fetchApi<UsuarioDetailResponse>("/usuarios/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 /** Alterna el estado activo/suspendido de un usuario. Solo ADMIN. */
@@ -37,6 +55,20 @@ export async function updateUserRoles(id: number, roles: string[]): Promise<Usua
   return fetchApi<UsuarioDetailResponse>(`/usuarios/${id}/roles`, {
     method: "PATCH",
     body: JSON.stringify({ roles }),
+  });
+}
+
+/** Elimina un usuario (soft delete). Solo ADMIN. */
+export async function eliminarUsuario(id: number): Promise<void> {
+  return fetchApi<void>(`/usuarios/${id}`, {
+    method: "DELETE",
+  });
+}
+
+/** Restaura un usuario eliminado lógicamente. Solo ADMIN. */
+export async function restaurarUsuario(id: number): Promise<UsuarioDetailResponse> {
+  return fetchApi<UsuarioDetailResponse>(`/usuarios/${id}/restore`, {
+    method: "PATCH",
   });
 }
 

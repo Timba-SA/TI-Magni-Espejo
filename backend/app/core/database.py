@@ -38,6 +38,16 @@ def migrate_ingredientes_columns():
 
 
 def create_db_and_tables():
+    # Importar todos los modelos para registrarlos en SQLModel.metadata
+    from app.modules.auth.models import Rol, UsuarioRol, RefreshToken
+    from app.modules.categorias.models import Categoria
+    from app.modules.direcciones.models import DireccionEntrega
+    from app.modules.ingredientes.models import Ingrediente
+    from app.modules.pagos.models import Pago
+    from app.modules.pedidos.models import EstadoPedido, FormaPago, Pedido, DetallePedido, HistorialEstadoPedido
+    from app.modules.productos.models import UnidadMedida, ProductoCategoria, ProductoIngrediente, Producto
+    from app.modules.usuarios.models import Usuario
+
     SQLModel.metadata.create_all(engine)
     try:
         migrate_ingredientes_columns()
