@@ -33,12 +33,15 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 | 028-backend-impl-user-roles | Done | Edición de Roles de Usuario (Backend y Frontend UI) |
 | 000-project-baseline | Done | Documentación del estado actual del proyecto The Food Store |
 | 002-frontend-landing-premium | Done | Desarrollo de la UI pública premium con Tailwind y React Router |
+| 005-soft-delete-estandarizado | Done | Estandarización de Soft Delete en Base de Datos (Backend) |
 | 006-frontend-folder-restructure | Done | Mover todos los archivos y carpetas del frontend a una nueva carpeta `frontend` |
+| 006-is-active-ingredientes-categorias | Done | Toggle is_active para habilitar/deshabilitar Ingredientes y Categorías |
 | 007-premium-ui-reservas-contacto | Done | Rediseño premium de páginas Reservas y Contacto |
 | 009-premium-ui-insumos-form | Done | Rediseño premium del formulario de Nuevo/Editar Insumo |
 | 012-visual-break-redesign | Done | Rediseño de la sección VisualBreak en la landing |
 | 016-backend-impl-seed-data | Done | Seed Data: Roles, EstadoPedido, FormaPago y Admin inicial |
 | 017-backend-impl-auth | Done | Autenticación JWT + RBAC: login, refresh, logout, rate limiting |
 | 018-backend-impl-usuarios | Done | Implementación de Usuarios, Suspender Cuentas, y Panel de Administración |
+| 019-backend-impl-categorias | Done | CRUD y lógica de negocio para Categorías (Backend) |
 | 020-backend-impl-ingredientes | Done | CRUD Ingredientes: paginación, filtros, soft delete, exportación .xlsx |
 | 021-pagination-and-export | Done | Paginación por servidor y Exportación a Excel en Categorías, Usuarios e Insumos |
