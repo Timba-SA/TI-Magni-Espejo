@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
@@ -181,7 +182,7 @@ class PedidoService:
         _ = pedido.historial
         return pedido
 
-    def avanzar_estado(self, pedido_id: int, usuario_id: int, roles: list[str], data: AvanzarEstadoRequest) -> Pedido:
+    def avanzar_estado(self, pedido_id: int, usuario_id: Optional[int], roles: list[str], data: AvanzarEstadoRequest) -> Pedido:
         """
         Avanza o cambia el estado de un pedido validando la FSM, roles y devolviendo stock si se cancela.
         """
@@ -204,7 +205,7 @@ class PedidoService:
                     detail=f"Transición inválida de {estado_desde} a {estado_hacia}"
                 )
 
-            is_admin_or_pedidos = "ADMIN" in roles or "PEDIDOS" in roles
+            is_admin_or_pedidos = "ADMIN" in roles or "PEDIDOS" in roles or usuario_id is None
 
             # 2. Validar Rol
             if not is_admin_or_pedidos:

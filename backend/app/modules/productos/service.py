@@ -8,6 +8,7 @@ from app.modules.productos.models import Producto, ProductoCategoria, ProductoIn
 from app.modules.productos.schemas import (
     ProductoCreate,
     ProductoUpdate,
+    ProductoDisponibilidadUpdate,
     UnidadMedidaCreate,
     UnidadMedidaUpdate,
 )
@@ -270,3 +271,24 @@ class ProductoService:
 
         self._session.refresh(pi)
         return pi
+
+    def actualizar_disponibilidad(self, id: int, data: ProductoDisponibilidadUpdate) -> Producto:
+        with ProductoUoW(self._session) as uow:
+            producto = uow.productos.get_by_id(id)
+            if not producto or producto.deleted_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Producto con id={id} no encontrado.",
+                )
+
+            if data.stock_cantidad is not None:
+                producto.stock_cantidad = data.stock_cantidad
+            if data.disponible is not None:
+                producto.disponible = data.disponible
+
+            producto.updated_at = datetime.utcnow()
+            uow.productos.add(producto)
+
+        self._session.refresh(producto)
+        return producto
+

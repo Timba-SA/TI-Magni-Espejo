@@ -22,7 +22,10 @@ class Usuario(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     deleted_at: Optional[datetime] = Field(default=None)
     
-    usuario_roles: list["UsuarioRol"] = Relationship(back_populates="usuario")
+    usuario_roles: list["UsuarioRol"] = Relationship(
+        back_populates="usuario",
+        sa_relationship_kwargs={"foreign_keys": "[UsuarioRol.usuario_id]"}
+    )
     refresh_tokens: list["RefreshToken"] = Relationship(back_populates="usuario")
     direcciones: list["DireccionEntrega"] = Relationship(back_populates="usuario")
 

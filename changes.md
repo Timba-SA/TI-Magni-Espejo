@@ -9,13 +9,15 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 - **Done:** Implementado y verificado.
 - **Rejected:** Propuesta rechazada.
 
-## Registro de Cambios Activos (Backend Implementation)
+## Registro de Cambios Activos (Backend & Frontend Implementation)
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 015-frontend-store-checkout | Draft | Flujo de checkout de la tienda en el Frontend | proposal, design, tasks, acceptance |
 | 023-backend-impl-pedidos | Done | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance, verification |
-| 025-backend-impl-admin-stock | Draft | Gestión de Stock y Disponibilidad (Admin) | proposal, design, tasks, acceptance |
+| 025-backend-impl-admin-stock | Done | Gestión de Stock y Disponibilidad (Admin) | proposal, design, tasks, acceptance, verification |
+| 029-frontend-store-catalogo | Draft | Catálogo de Productos Premium en el Frontend | proposal, design, tasks, acceptance |
+| 030-frontend-store-carrito | Draft | Sistema de Carrito de Compras en el Frontend | proposal, design, tasks, acceptance |
+| 031-frontend-store-checkout | Draft | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance |
 | 026-backend-impl-admin-metrics | Draft | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance |
 | 027-frontend-navbar-ui-and-dark-mode | Done | Navbar UI Refinements + Dark/Light Mode en Login y Panel | proposal, design, tasks, acceptance, verification |
 

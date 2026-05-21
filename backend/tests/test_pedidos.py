@@ -300,3 +300,138 @@ def test_cancelar_sin_motivo_bad_request():
     response = client.patch("/api/v1/pedidos/1/estado", json=payload)
     assert response.status_code == 400
     assert "motivo" in response.json()["detail"].lower()
+
+
+def test_avanzar_estado_sistema_usuario_null():
+    """
+    Test de Nulidad de Historial:
+    Comprueba que cuando el sistema (usuario_id=None) avanza el estado,
+    no se lanzan errores de permisos y en el historial se almacena usuario_id = None.
+    Esto es crucial para que no fallen los webhooks asíncronos de MercadoPago.
+    """
+    from app.modules.pedidos.service import PedidoService
+    from app.modules.pedidos.schemas import AvanzarEstadoRequest
+
+    # 1. Insertar un pedido inicial en estado PENDIENTE usando la base de datos directa
+    with Session(engine) as session:
+        pedido = Pedido(
+            id=99,
+            usuario_id=1,
+            direccion_id=1,
+            estado_codigo="PENDIENTE",
+            forma_pago_codigo="MERCADOPAGO",
+            subtotal=Decimal("150.00"),
+            total=Decimal("200.00")
+        )
+        session.add(pedido)
+        session.commit()
+
+    # 2. Transicionar como SISTEMA (usuario_id=None) a través del servicio
+    with Session(engine) as session:
+        service = PedidoService(session)
+        req = AvanzarEstadoRequest(estado_hacia="CONFIRMADO")
+        
+        # Llamamos al servicio con usuario_id=None
+        pedido_actualizado = service.avanzar_estado(
+            pedido_id=99,
+            usuario_id=None,
+            roles=[],
+            data=req
+        )
+        assert pedido_actualizado.estado_codigo == "CONFIRMADO"
+        
+        # Validar en el historial que el registro tenga usuario_id en NULL
+        historial_sistema = [h for h in pedido_actualizado.historial if h.estado_hacia == "CONFIRMADO"]
+        assert len(historial_sistema) == 1
+        assert historial_sistema[0].usuario_id is None
+        assert historial_sistema[0].estado_desde == "PENDIENTE"
+
+
+def test_detalle_pedido_restriccion_unica_compuesta():
+    """
+    Test de Restricción Única Compuesta:
+    Verifica que la restricción UNIQUE(pedido_id, producto_id) impida
+    que existan registros duplicados del mismo producto en un pedido.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    # 1. Crear un pedido y agregar dos detalles idénticos (mismo pedido_id y producto_id)
+    with Session(engine) as session:
+        pedido = Pedido(
+            id=100,
+            usuario_id=1,
+            direccion_id=1,
+            estado_codigo="PENDIENTE",
+            forma_pago_codigo="EFECTIVO"
+        )
+        session.add(pedido)
+        session.commit()
+
+    # 2. Agregar primer detalle
+    with Session(engine) as session:
+        det1 = DetallePedido(
+            pedido_id=100,
+            producto_id=1,
+            cantidad=1,
+            nombre_snapshot="Hamburguesa",
+            precio_snapshot=Decimal("150.00"),
+            subtotal_snap=Decimal("150.00")
+        )
+        session.add(det1)
+        session.commit()
+
+    # 3. Intentar agregar el segundo detalle idéntico y esperar que falle por integridad de base de datos
+    with Session(engine) as session:
+        det2 = DetallePedido(
+            pedido_id=100,
+            producto_id=1,
+            cantidad=2,
+            nombre_snapshot="Hamburguesa",
+            precio_snapshot=Decimal("150.00"),
+            subtotal_snap=Decimal("300.00")
+        )
+        session.add(det2)
+        
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+
+def test_detalle_pedido_personalizacion_json():
+    """
+    Test de Personalización Estructurada:
+    Valida que el campo 'personalizacion' se almacene y recupere
+    correctamente como una lista de enteros en la base de datos.
+    """
+    from sqlmodel import select
+
+    # 1. Crear un pedido y un detalle con personalización estructurada [1, 4, 7]
+    with Session(engine) as session:
+        pedido = Pedido(
+            id=101,
+            usuario_id=1,
+            direccion_id=1,
+            estado_codigo="PENDIENTE",
+            forma_pago_codigo="EFECTIVO"
+        )
+        session.add(pedido)
+        
+        det = DetallePedido(
+            pedido_id=101,
+            producto_id=1,
+            cantidad=1,
+            nombre_snapshot="Hamburguesa",
+            precio_snapshot=Decimal("150.00"),
+            subtotal_snap=Decimal("150.00"),
+            personalizacion=[1, 4, 7]  # Lista de IDs de ingredientes
+        )
+        session.add(det)
+        session.commit()
+
+    # 2. Recuperar en una nueva sesión y comprobar que se serializa y deserializa como tipo lista nativo
+    with Session(engine) as session:
+        db_det = session.exec(
+            select(DetallePedido).where(DetallePedido.pedido_id == 101, DetallePedido.producto_id == 1)
+        ).one()
+        assert isinstance(db_det.personalizacion, list)
+        assert db_det.personalizacion == [1, 4, 7]
+

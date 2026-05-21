@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship, Column, Numeric
+from sqlalchemy import JSON, UniqueConstraint
 
 if TYPE_CHECKING:
     from app.modules.usuarios.models import Usuario
@@ -53,16 +54,21 @@ class Pedido(SQLModel, table=True):
 
 class DetallePedido(SQLModel, table=True):
     __tablename__ = "detalles_pedido"
+    
+    __table_args__ = (
+        UniqueConstraint("pedido_id", "producto_id", name="uq_pedido_producto"),
+    )
 
     id: Optional[int] = Field(default=None, primary_key=True)
     pedido_id: int = Field(foreign_key="pedidos.id", nullable=False)
     producto_id: int = Field(foreign_key="productos.id", nullable=False)
     cantidad: int = Field(nullable=False)
     
-    nombre_snapshot: str = Field(max_length=150, nullable=False)
+    nombre_snapshot: str = Field(max_length=200, nullable=False)
     precio_snapshot: Decimal = Field(sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
     subtotal_snap: Decimal = Field(sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
-    personalizacion: Optional[str] = Field(default=None)
+    personalizacion: Optional[list[int]] = Field(default=None, sa_column=Column(JSON, nullable=True))
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     # Relaciones
     pedido: Optional["Pedido"] = Relationship(back_populates="detalles")
@@ -77,7 +83,7 @@ class HistorialEstadoPedido(SQLModel, table=True):
     
     estado_desde: Optional[str] = Field(foreign_key="estados_pedido.codigo", nullable=True)
     estado_hacia: str = Field(foreign_key="estados_pedido.codigo", nullable=False)
-    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
+    usuario_id: Optional[int] = Field(default=None, foreign_key="usuarios.id", nullable=True)
     
     motivo: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

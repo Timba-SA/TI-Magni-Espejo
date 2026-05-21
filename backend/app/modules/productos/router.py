@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
 from app.core.database import get_session
+from app.core.dependencies import require_role
 from app.modules.productos.schemas import (
     ProductoCreate,
     ProductoUpdate,
+    ProductoDisponibilidadUpdate,
     ProductoRead,
     ProductoReadDetalle,
     UnidadMedidaCreate,
@@ -81,6 +83,21 @@ def crear_producto(data: ProductoCreate, session: SessionDep):
 @router.patch("/productos/{id}", response_model=ProductoRead, status_code=status.HTTP_200_OK)
 def actualizar_producto(id: int, data: ProductoUpdate, session: SessionDep):
     return ProductoService(session).actualizar(id, data)
+
+
+@router.patch(
+    "/productos/{id}/disponibilidad",
+    response_model=ProductoRead,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_role("ADMIN", "STOCK"))]
+)
+def actualizar_disponibilidad_producto(
+    id: int,
+    data: ProductoDisponibilidadUpdate,
+    session: SessionDep
+):
+    return ProductoService(session).actualizar_disponibilidad(id, data)
+
 
 
 @router.delete("/productos/{id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -9,6 +9,8 @@ class Rol(SQLModel, table=True):
     __tablename__ = "roles"
     
     codigo: str = Field(primary_key=True, max_length=20)
+    nombre: str = Field(max_length=50, nullable=False, unique=True)
+    descripcion: Optional[str] = Field(default=None)
     
     usuario_roles: list["UsuarioRol"] = Relationship(back_populates="rol")
 
@@ -18,8 +20,19 @@ class UsuarioRol(SQLModel, table=True):
     usuario_id: int = Field(foreign_key="usuarios.id", primary_key=True)
     rol_codigo: str = Field(foreign_key="roles.codigo", primary_key=True)
     
-    usuario: Optional["Usuario"] = Relationship(back_populates="usuario_roles")
+    asignado_por_id: Optional[int] = Field(default=None, foreign_key="usuarios.id", nullable=True)
+    expires_at: Optional[datetime] = Field(default=None, nullable=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    
+    usuario: Optional["Usuario"] = Relationship(
+        back_populates="usuario_roles",
+        sa_relationship_kwargs={"foreign_keys": "[UsuarioRol.usuario_id]"}
+    )
     rol: Optional[Rol] = Relationship(back_populates="usuario_roles")
+    
+    asignado_por: Optional["Usuario"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[UsuarioRol.asignado_por_id]"}
+    )
 
 class RefreshToken(SQLModel, table=True):
     __tablename__ = "refresh_tokens"
@@ -28,6 +41,7 @@ class RefreshToken(SQLModel, table=True):
     token_hash: str = Field(max_length=64, nullable=False, unique=True)
     expires_at: datetime = Field(nullable=False)
     revoked_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
     usuario: Optional["Usuario"] = Relationship(back_populates="refresh_tokens")

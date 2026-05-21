@@ -1,10 +1,11 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Field
 
 from app.modules.categorias.schemas import CategoriaRead
 from app.modules.ingredientes.schemas import IngredienteRead
+
 
 
 # ─── UnidadMedida ─────────────────────────────────────────────────────────────
@@ -82,6 +83,11 @@ class ProductoUpdate(SQLModel):
     stock_cantidad: Optional[int] = None
     disponible: Optional[bool] = None
     unidad_venta_id: Optional[int] = None
+
+
+class ProductoDisponibilidadUpdate(SQLModel):
+    stock_cantidad: Optional[int] = Field(default=None, ge=0)
+    disponible: Optional[bool] = Field(default=None)
 
 
 class ProductoRead(SQLModel):
