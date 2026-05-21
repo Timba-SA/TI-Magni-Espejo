@@ -9,6 +9,9 @@ import { CareersPage } from "@/pages/public/CareersPage";
 import { PressPage } from "@/pages/public/PressPage";
 import { PrivacyPage } from "@/pages/public/PrivacyPage";
 import { TermsPage } from "@/pages/public/TermsPage";
+import { CheckoutPage } from "@/pages/checkout/CheckoutPage";
+import { OrderSuccessPage } from "@/pages/checkout/OrderSuccessPage";
+import { AuthProtectedRoute } from "./AuthProtectedRoute";
 
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
@@ -34,6 +37,24 @@ export function AppRouter() {
         <Route path="/prensa" element={<PressPage />} />
         <Route path="/privacidad" element={<PrivacyPage />} />
         <Route path="/terminos" element={<TermsPage />} />
+        
+        {/* Rutas de Checkout protegidas */}
+        <Route
+          path="/checkout"
+          element={
+            <AuthProtectedRoute>
+              <CheckoutPage />
+            </AuthProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout/success"
+          element={
+            <AuthProtectedRoute>
+              <OrderSuccessPage />
+            </AuthProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Auth */}

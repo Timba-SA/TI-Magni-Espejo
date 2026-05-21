@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "../hooks/useCart";
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Info } from "lucide-react";
-import { toast } from "sonner";
 
 export const CartDrawer: React.FC = () => {
+  const navigate = useNavigate();
   const {
     items,
     totalPrecio,
@@ -236,9 +237,8 @@ export const CartDrawer: React.FC = () => {
                   </button>
                   <button
                     onClick={() => {
-                      toast.success("Redirigiendo al checkout...");
                       setIsOpen(false);
-                      // Aquí redirigiremos al checkout en el siguiente change
+                      navigate("/checkout");
                     }}
                     className="col-span-4 py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 tracking-wide cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-orange-500/10"
                   >

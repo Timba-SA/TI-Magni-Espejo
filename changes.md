@@ -13,7 +13,7 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 031-frontend-store-checkout | Draft | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance |
+| 031-frontend-store-checkout | Done | Flujo de Checkout y Confirmación en el Frontend | proposal, design, tasks, acceptance, verification |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
