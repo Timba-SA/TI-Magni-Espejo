@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InsumoStats } from "@/features/insumos/components/InsumoStats";

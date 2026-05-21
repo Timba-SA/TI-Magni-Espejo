@@ -125,7 +125,7 @@ function LineInput({
 
 // ─── Main LoginPage ───────────────────────────────────────────────────────────
 export function LoginPage() {
-  const { login, register, isAuthenticated, user } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [isRegistering, setIsRegistering] = useState(false);

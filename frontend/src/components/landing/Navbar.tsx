@@ -1,8 +1,10 @@
 import { motion, useMotionValue, useSpring, AnimatePresence } from "motion/react";
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { LogIn } from "lucide-react";
+import { LogIn, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/features/carrito/hooks/useCart";
+import { CartDrawer } from "@/features/carrito/components/CartDrawer";
 
 // ─── Historical ticker ──────────────────────────────────────────────────────
 const TICKER_TEXT =
@@ -317,6 +319,7 @@ function FullScreenMenu({ open, onClose, onLogout }: { open: boolean; onClose: (
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const { totalItems, setIsOpen: setCartOpen } = useCart();
   const navigate = useNavigate();
 
   // Cierra sesión y navega a la landing
@@ -331,6 +334,14 @@ export function Navbar() {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  // Posicionamiento dinámico del botón de carrito para evitar colisiones
+  let cartRightClass = "right-28";
+  if (!isAuthenticated) {
+    cartRightClass = "right-[260px]";
+  } else if (user?.rol !== "CLIENT") {
+    cartRightClass = "right-[210px]";
+  }
 
   return (
     <>
@@ -370,6 +381,33 @@ export function Navbar() {
       >
         <OrbitalButton open={open} onClick={() => setOpen(!open)} />
       </motion.div>
+
+      {/* Botón corner: Carrito de Compras */}
+      <motion.button
+        onClick={() => setCartOpen(true)}
+        className={`fixed top-[38px] ${cartRightClass} z-[200] group flex items-center gap-2 px-3 py-2 transition-all duration-300 bg-black/40 hover:bg-black/60 backdrop-blur-md cursor-pointer rounded-lg`}
+        style={{ border: "1px solid rgba(255,90,0,0.3)" }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,90,0,0.85)")}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,90,0,0.3)")}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="relative flex items-center justify-center">
+          <ShoppingBag size={13} style={{ color: "#FF5A00" }} />
+          {totalItems > 0 && (
+            <span className="absolute -top-2.5 -right-2.5 min-w-4 h-4 bg-orange-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border border-black">
+              {totalItems}
+            </span>
+          )}
+        </div>
+        <span
+          className="text-[11px] tracking-[0.2em] uppercase font-bold hidden sm:inline"
+          style={{ color: "rgba(255,90,0,0.9)", fontFamily: "'Cormorant Garamond', serif" }}
+        >
+          Pedido
+        </span>
+      </motion.button>
 
       {/* Botón corner: Login cuando no hay sesión */}
       {!isAuthenticated && (
@@ -425,6 +463,9 @@ export function Navbar() {
 
       {/* Full screen overlay */}
       <FullScreenMenu open={open} onClose={() => setOpen(false)} onLogout={handleLogout} />
+
+      {/* Drawer lateral de Carrito */}
+      <CartDrawer />
     </>
   );
 }

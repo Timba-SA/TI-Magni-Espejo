@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { toast } from "sonner";
+
 import { getActiveCategorias, getActiveProductos } from "../services/catalogoService";
 import type { Categoria, Producto } from "../types/catalogo.types";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { ProductoCard } from "./ProductoCard";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { useCart } from "@/features/carrito/hooks/useCart";
 
 // Colores de acento y degradados basados en la heurística de categoría
 const ACCENT_COLORS = {
@@ -32,6 +33,7 @@ function getCategoryTheme(nombre: string): "platos" | "bebidas" | "postres" {
 }
 
 export function CatalogoExperience() {
+  const { addItem } = useCart();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
@@ -80,25 +82,7 @@ export function CatalogoExperience() {
   const handleConfirmAddToPedido = (excluidosIds: number[]) => {
     if (!selectedProducto) return;
 
-    // TODO: En el Change 030 conectaremos esto con el Carrito Context
-    const ingredsRemovidos = selectedProducto.ingredientes
-      ?.filter((i) => excluidosIds.includes(i.ingrediente_id))
-      .map((i) => i.ingrediente?.nombre || `ID: ${i.ingrediente_id}`);
-
-    const detalleAgregado =
-      ingredsRemovidos && ingredsRemovidos.length > 0
-        ? ` (Sin: ${ingredsRemovidos.join(", ")})`
-        : "";
-
-    toast.success(`¡${selectedProducto.nombre} agregado al pedido!${detalleAgregado}`, {
-      duration: 3500,
-      style: {
-        background: "#121212",
-        color: "#F8F8F8",
-        border: "1px border rgba(248, 248, 248, 0.08)",
-      },
-    });
-
+    addItem(selectedProducto, 1, excluidosIds);
     setSelectedProducto(null);
   };
 

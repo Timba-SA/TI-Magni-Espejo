@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Users, ShieldCheck, UserCheck, UserX, Download } from "lucide-react";
+import { Users, UserCheck, UserX, Download } from "lucide-react";
 import type { UsuarioDetailResponse } from "@/features/users/types/user.types";
 import { getUsuarios, toggleActive, updateUserRoles, exportarUsuarios } from "@/features/users/services/usersService";
 import { BackToDashboard } from "@/components/admin/BackToDashboard";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import type { Producto } from "../types/catalogo.types";
 
 interface ProductDetailModalProps {
