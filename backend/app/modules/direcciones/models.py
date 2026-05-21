@@ -1,22 +1,36 @@
-# TODO: Implementar modelo DireccionEntrega
-#
-# Tabla: DireccionEntrega <<Table>>
-# Dominio 1 - Identidad & Acceso
-#
-# Campos:
-# - id: BIGSERIAL {PK}
-# - usuario_id: BIGINT {FK → Usuario.id, NN}  ← ON DELETE CASCADE
-# - alias: VARCHAR(50)  ← opcional, ej: "Casa", "Trabajo"
-# - linea1: TEXT {NN}
-# - linea2: TEXT
-# - ciudad: VARCHAR(100) {NN}
-# - provincia: VARCHAR(100)
-# - codigo_postal: VARCHAR(10)
-# - latitud: DECIMAL(9,6)
-# - longitud: DECIMAL(9,6)
-# - es_principal: BOOLEAN {NN, DEFAULT false}
-#   ← Máximo una por usuario. Validar en Service, NO en FK.
-#   ← PATCH /api/v1/direcciones/{id}/principal desactiva la anterior.
-# - created_at: TIMESTAMPTZ {NN}
-# - updated_at: TIMESTAMPTZ {NN}
-# - deleted_at: TIMESTAMPTZ  ← Soft-delete
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional, TYPE_CHECKING
+from sqlmodel import SQLModel, Field, Relationship, Column, Numeric
+
+if TYPE_CHECKING:
+    from app.modules.usuarios.models import Usuario
+
+class DireccionEntrega(SQLModel, table=True):
+    """Modelo para representar las direcciones de entrega de los usuarios.
+    Soporta múltiples direcciones, marcas de principal, y soft delete.
+    """
+    __tablename__ = "direcciones_entrega"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
+    
+    alias: Optional[str] = Field(default=None, max_length=50)
+    linea1: str = Field(nullable=False)
+    linea2: Optional[str] = Field(default=None)
+    ciudad: str = Field(max_length=100, nullable=False)
+    provincia: Optional[str] = Field(default=None, max_length=100)
+    codigo_postal: Optional[str] = Field(default=None, max_length=10)
+    
+    latitud: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(precision=9, scale=6), nullable=True))
+    longitud: Optional[Decimal] = Field(default=None, sa_column=Column(Numeric(precision=9, scale=6), nullable=True))
+
+    
+    es_principal: bool = Field(default=False, nullable=False)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    deleted_at: Optional[datetime] = Field(default=None)
+
+    # Relación con Usuario
+    usuario: Optional["Usuario"] = Relationship(back_populates="direcciones")

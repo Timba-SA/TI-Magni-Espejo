@@ -1,4 +1,8 @@
-# TODO: Implementar UnitOfWork de direcciones
-#
-# Repositorios a exponer:
-# - direcciones: DireccionRepository
+from sqlmodel import Session
+from app.core.unit_of_work import UnitOfWork
+from app.modules.direcciones.repository import DireccionRepository
+
+class DireccionUoW(UnitOfWork):
+    def __init__(self, session: Session):
+        super().__init__(session)
+        self.direcciones = DireccionRepository(session)
