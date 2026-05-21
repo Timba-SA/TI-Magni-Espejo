@@ -14,7 +14,7 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
 | 015-frontend-store-checkout | Draft | Flujo de checkout de la tienda en el Frontend | proposal, design, tasks, acceptance |
-| 023-backend-impl-pedidos | Draft | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance |
+| 023-backend-impl-pedidos | Done | Implementación de Pedidos y Máquina de Estados (FSM) | proposal, design, tasks, acceptance, verification |
 | 024-backend-impl-pagos | Draft | Integración con MercadoPago (Idempotency y Webhook) | proposal, design, tasks, acceptance |
 | 025-backend-impl-admin-stock | Draft | Gestión de Stock y Disponibilidad (Admin) | proposal, design, tasks, acceptance |
 | 026-backend-impl-admin-metrics | Draft | Dashboard de Métricas Administrativas | proposal, design, tasks, acceptance |
