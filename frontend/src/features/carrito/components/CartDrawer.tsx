@@ -45,7 +45,7 @@ export const CartDrawer: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 z-[300] bg-[#000000]/60 backdrop-blur-sm cursor-pointer"
           />
 
           {/* Panel Lateral Drawer */}
@@ -54,7 +54,7 @@ export const CartDrawer: React.FC = () => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 z-50 h-full w-full sm:w-[480px] bg-[#0E0E0E]/95 border-l border-white/5 shadow-2xl flex flex-col backdrop-blur-xl"
+            className="fixed top-0 right-0 z-[300] h-full w-full sm:w-[480px] bg-[#0E0E0E]/95 border-l border-white/5 shadow-2xl flex flex-col backdrop-blur-xl"
           >
             {/* Cabecera */}
             <div className="p-6 border-b border-white/5 flex items-center justify-between">

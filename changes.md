@@ -20,6 +20,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 034-landing-navbar-perfil | Done | Rediseño Landing (Hero) + Navbar + Página de Perfil |
 | 033-mejoras-gestion-usuarios | Done | Mejoras en la Gestión de Usuarios (Filtros, Soft Delete, Multi-roles, Excel completo) |
 | 032-formulario-complejo-ingredientes | Done | Formulario Complejo y Gestión de Stock de Ingredientes |
 | 031-frontend-store-checkout | Done | Flujo de Checkout y Confirmación en el Frontend |

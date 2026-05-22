@@ -10,6 +10,7 @@ import { PressPage } from "@/pages/public/PressPage";
 import { PrivacyPage } from "@/pages/public/PrivacyPage";
 import { TermsPage } from "@/pages/public/TermsPage";
 import { CheckoutPage } from "@/pages/checkout/CheckoutPage";
+import { ProfilePage } from "@/pages/public/ProfilePage";
 import { OrderSuccessPage } from "@/pages/checkout/OrderSuccessPage";
 import { AuthProtectedRoute } from "./AuthProtectedRoute";
 
@@ -52,6 +53,14 @@ export function AppRouter() {
           element={
             <AuthProtectedRoute>
               <OrderSuccessPage />
+            </AuthProtectedRoute>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <AuthProtectedRoute>
+              <ProfilePage />
             </AuthProtectedRoute>
           }
         />
