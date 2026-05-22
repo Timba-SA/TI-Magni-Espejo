@@ -13,6 +13,7 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
+| 036-reestructuracion-stock-peso-ingredientes | Draft | Reestructuración de Stock, Peso y Gestión de Inactivos en Ingredientes | [specs](file:///c:/Users/Lauti/OneDrive/Escritorio/TI-Magni/specs/changes/036-reestructuracion-stock-peso-ingredientes/) |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
