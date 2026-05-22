@@ -6,12 +6,15 @@ engine = create_engine(settings.database_url, echo=True)
 
 
 def migrate_ingredientes_columns():
-    from sqlalchemy import text
-    with engine.begin() as conn:
-        # Consultar las columnas existentes en la tabla ingredientes
-        res = conn.execute(text("PRAGMA table_info(ingredientes)")).fetchall()
-        columnas = {row[1] for row in res}
+    from sqlalchemy import text, inspect
+    
+    inspector = inspect(engine)
+    if not inspector.has_table("ingredientes"):
+        return
         
+    columnas = {col["name"] for col in inspector.get_columns("ingredientes")}
+    
+    with engine.begin() as conn:
         if "unidad_medida_id" not in columnas:
             try:
                 conn.execute(text("ALTER TABLE ingredientes ADD COLUMN unidad_medida_id INTEGER"))

@@ -20,6 +20,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 035-migration-ingredientes-postgres | Done | Corrección de Migración de Ingredientes en PostgreSQL |
 | 034-landing-navbar-perfil | Done | Rediseño Landing (Hero) + Navbar + Página de Perfil |
 | 033-mejoras-gestion-usuarios | Done | Mejoras en la Gestión de Usuarios (Filtros, Soft Delete, Multi-roles, Excel completo) |
 | 032-formulario-complejo-ingredientes | Done | Formulario Complejo y Gestión de Stock de Ingredientes |
