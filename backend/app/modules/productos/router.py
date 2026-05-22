@@ -35,18 +35,32 @@ def obtener_unidad_medida(id: int, session: SessionDep):
 
 
 @router.post("/unidades-medida/", response_model=UnidadMedidaRead, status_code=status.HTTP_200_OK)
-def crear_unidad_medida(data: UnidadMedidaCreate, session: SessionDep):
+def crear_unidad_medida(
+    data: UnidadMedidaCreate,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO")),
+):
     return UnidadMedidaService(session).crear(data)
 
 
 @router.patch("/unidades-medida/{id}", response_model=UnidadMedidaRead, status_code=status.HTTP_200_OK)
-def actualizar_unidad_medida(id: int, data: UnidadMedidaUpdate, session: SessionDep):
+def actualizar_unidad_medida(
+    id: int,
+    data: UnidadMedidaUpdate,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO")),
+):
     return UnidadMedidaService(session).actualizar(id, data)
 
 
 @router.delete("/unidades-medida/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_unidad_medida(id: int, session: SessionDep):
+def eliminar_unidad_medida(
+    id: int,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO")),
+):
     UnidadMedidaService(session).eliminar(id)
+
 
 
 # ─── Producto endpoints ───────────────────────────────────────────────────────
@@ -76,12 +90,21 @@ def obtener_producto(id: int, session: SessionDep):
 
 
 @router.post("/productos/", response_model=ProductoRead, status_code=status.HTTP_200_OK)
-def crear_producto(data: ProductoCreate, session: SessionDep):
+def crear_producto(
+    data: ProductoCreate,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
+):
     return ProductoService(session).crear(data)
 
 
 @router.patch("/productos/{id}", response_model=ProductoRead, status_code=status.HTTP_200_OK)
-def actualizar_producto(id: int, data: ProductoUpdate, session: SessionDep):
+def actualizar_producto(
+    id: int,
+    data: ProductoUpdate,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
+):
     return ProductoService(session).actualizar(id, data)
 
 
@@ -89,7 +112,7 @@ def actualizar_producto(id: int, data: ProductoUpdate, session: SessionDep):
     "/productos/{id}/disponibilidad",
     response_model=ProductoRead,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(require_role("ADMIN", "STOCK"))]
+    dependencies=[Depends(require_role("ADMIN", "ENCARGADO", "STOCK"))]
 )
 def actualizar_disponibilidad_producto(
     id: int,
@@ -101,7 +124,11 @@ def actualizar_disponibilidad_producto(
 
 
 @router.delete("/productos/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_producto(id: int, session: SessionDep):
+def eliminar_producto(
+    id: int,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
+):
     ProductoService(session).eliminar(id)
 
 
@@ -114,5 +141,11 @@ from app.modules.productos.schemas import ProductoIngredienteCreate, ProductoIng
     response_model=ProductoIngredienteRead,
     status_code=status.HTTP_200_OK,
 )
-def asociar_ingrediente(id: int, data: ProductoIngredienteCreate, session: SessionDep):
+def asociar_ingrediente(
+    id: int,
+    data: ProductoIngredienteCreate,
+    session: SessionDep,
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
+):
     return ProductoService(session).asociar_ingrediente(id, data)
+

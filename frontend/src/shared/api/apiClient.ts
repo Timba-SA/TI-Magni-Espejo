@@ -5,7 +5,7 @@ function getStoredToken(): string | null {
 }
 
 /** Limpia la sesión y redirige al login cuando el token expira. */
-function handleTokenExpired(): void {
+export function handleTokenExpired(): void {
   localStorage.removeItem("the_food_store_token");
   localStorage.removeItem("the_food_store_session");
   // Redirige solo si no estamos ya en el login
@@ -26,6 +26,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   };
 
   const response = await fetch(url, {
+    credentials: "include",
     ...options,
     headers: {
       ...defaultHeaders,
@@ -34,10 +35,13 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   });
 
   if (!response.ok) {
-    // 401 → token expirado o inválido: limpiar sesión y redirigir al login
-    if (response.status === 401) {
+    // 401 o 403 → token expirado o inválido / no autorizado: limpiar sesión y redirigir al login
+    if (response.status === 401 || response.status === 403) {
       handleTokenExpired();
-      throw new Error("Tu sesión expiró. Iniciá sesión nuevamente.");
+      const msg = response.status === 401
+        ? "Tu sesión expiró. Iniciá sesión nuevamente."
+        : "No tenés permisos para realizar esta acción.";
+      throw new Error(msg);
     }
 
     let errorMessage = "Ocurrió un error en la solicitud";

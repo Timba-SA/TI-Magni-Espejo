@@ -1,4 +1,4 @@
-import { fetchApi } from "@/shared/api/apiClient";
+import { fetchApi, handleTokenExpired } from "@/shared/api/apiClient";
 import type {
   UsuarioDetailResponse,
   UsuarioResponse,
@@ -80,10 +80,14 @@ export async function exportarUsuarios(): Promise<void> {
   }
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}/usuarios/exportar`, {
+    credentials: "include",
     headers,
   });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      handleTokenExpired();
+    }
     throw new Error("Error al exportar usuarios");
   }
 

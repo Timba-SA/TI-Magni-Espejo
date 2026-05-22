@@ -1,5 +1,5 @@
 import type { Ingrediente, IngredienteFormData, UnidadMedida } from "../types/insumo.types";
-import { fetchApi } from "@/shared/api/apiClient";
+import { fetchApi, handleTokenExpired } from "@/shared/api/apiClient";
 
 // Respuesta paginada del backend
 interface IngredienteListResponse {
@@ -127,10 +127,14 @@ export async function exportarIngredientes(
   if (soloAlergenos) params.append("es_alergeno", "true");
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}/ingredientes/exportar?${params.toString()}`, {
+    credentials: "include",
     headers,
   });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      handleTokenExpired();
+    }
     throw new Error("Error al exportar ingredientes");
   }
 

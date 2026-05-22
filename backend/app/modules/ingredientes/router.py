@@ -27,7 +27,7 @@ def listar_ingredientes(
     skip: Annotated[int, Query(ge=0, description="Registros a saltar")] = 0,
     limit: Annotated[int, Query(ge=1, le=100, description="Límite de registros")] = 20,
     incluir_inactivos: Annotated[bool, Query(description="Incluir ingredientes inactivos")] = False,
-    _current_user: dict = Depends(get_current_user),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK", "PEDIDOS", "CAJERO", "COCINERO")),
 ):
     return IngredienteService(session).listar(
         nombre, es_alergeno, skip, limit, incluir_inactivos
@@ -41,7 +41,7 @@ def exportar_ingredientes(
     session: SessionDep,
     nombre: Annotated[Optional[str], Query()] = None,
     es_alergeno: Annotated[Optional[bool], Query()] = None,
-    _current_user: dict = Depends(get_current_user),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK", "PEDIDOS", "CAJERO", "COCINERO")),
 ):
     file_bytes = IngredienteService(session).exportar(nombre, es_alergeno)
     return StreamingResponse(
@@ -55,7 +55,7 @@ def exportar_ingredientes(
 def obtener_ingrediente(
     id: int,
     session: SessionDep,
-    _current_user: dict = Depends(get_current_user),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK", "PEDIDOS", "CAJERO", "COCINERO")),
 ):
     return IngredienteService(session).obtener(id)
 
@@ -68,7 +68,7 @@ def obtener_ingrediente(
 def crear_ingrediente(
     data: IngredienteCreate,
     session: SessionDep,
-    _current_user: dict = Depends(require_role("ADMIN", "STOCK")),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
 ):
     return IngredienteService(session).crear(data)
 
@@ -78,7 +78,7 @@ def actualizar_ingrediente(
     id: int,
     data: IngredienteUpdate,
     session: SessionDep,
-    _current_user: dict = Depends(require_role("ADMIN", "STOCK")),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
 ):
     return IngredienteService(session).actualizar(id, data)
 
@@ -87,7 +87,7 @@ def actualizar_ingrediente(
 def toggle_active_ingrediente(
     id: int,
     session: SessionDep,
-    _current_user: dict = Depends(require_role("ADMIN", "STOCK")),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
 ):
     """Habilita o inhabilita un ingrediente. Sigue visible en el admin con etiqueta 'Inactivo'."""
     return IngredienteService(session).toggle_active(id)
@@ -97,7 +97,8 @@ def toggle_active_ingrediente(
 def eliminar_ingrediente(
     id: int,
     session: SessionDep,
-    _current_user: dict = Depends(require_role("ADMIN", "STOCK")),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
 ):
     """Archiva el ingrediente (soft delete). Desaparece de las listas normales."""
     IngredienteService(session).eliminar(id)
+

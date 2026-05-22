@@ -1,18 +1,22 @@
 from typing import Callable
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status, Request
 
 from app.core.security import decode_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+def get_current_user(request: Request) -> dict:
     """
-    Decodifica el Bearer token del header Authorization.
+    Extrae el token access_token directamente de las cookies del request.
     Retorna el payload del JWT o lanza HTTP 401.
     """
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autenticación faltante.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return decode_access_token(token)
 
 
@@ -32,4 +36,4 @@ def require_role(*roles: str) -> Callable:
             )
         return payload
 
-    return _check_role
+    return _check_role
