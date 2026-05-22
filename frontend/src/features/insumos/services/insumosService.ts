@@ -14,7 +14,8 @@ export async function getInsumos(
   skip: number = 0,
   limit: number = 20,
   search: string = "",
-  soloAlergenos: boolean = false
+  soloAlergenos: boolean = false,
+  mostrarInactivos: boolean = false
 ): Promise<IngredienteListResponse> {
   const params = new URLSearchParams({
     skip: skip.toString(),
@@ -22,6 +23,7 @@ export async function getInsumos(
   });
   if (search) params.append("nombre", search);
   if (soloAlergenos) params.append("es_alergeno", "true");
+  if (mostrarInactivos) params.append("incluir_inactivos", "true");
 
   return await fetchApi<IngredienteListResponse>(`/ingredientes?${params.toString()}`);
 }
@@ -53,6 +55,7 @@ export async function createInsumo(data: IngredienteFormData): Promise<Ingredien
       stock_actual: Number(data.stock_actual) || 0,
       stock_minimo: Number(data.stock_minimo) || 0,
       costo_unitario: Number(data.costo_unitario) || 0,
+      peso: data.peso !== null && data.peso !== undefined ? Number(data.peso) : null,
     }),
   });
 }
@@ -72,6 +75,7 @@ export async function updateInsumo(
         stock_actual: Number(data.stock_actual) !== undefined ? Number(data.stock_actual) : undefined,
         stock_minimo: Number(data.stock_minimo) !== undefined ? Number(data.stock_minimo) : undefined,
         costo_unitario: Number(data.costo_unitario) !== undefined ? Number(data.costo_unitario) : undefined,
+        peso: data.peso !== null && data.peso !== undefined ? Number(data.peso) : null,
       }),
     });
   } catch {

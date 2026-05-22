@@ -41,9 +41,12 @@ class IngredienteService:
         es_alergeno: Optional[bool] = None,
         skip: int = 0,
         limit: int = 20,
+        incluir_inactivos: bool = False,
     ) -> IngredienteListResponse:
         with IngredienteUoW(self._session) as uow:
-            items, total = uow.ingredientes.list_with_filters(nombre, es_alergeno, skip, limit)
+            items, total = uow.ingredientes.list_with_filters(
+                nombre, es_alergeno, skip, limit, incluir_inactivos
+            )
             return IngredienteListResponse(
                 items=[IngredienteRead.model_validate(i) for i in items],
                 total=total,
@@ -80,13 +83,16 @@ class IngredienteService:
     def toggle_active(self, id: int) -> Ingrediente:
         """
         Invierte el estado is_active del ingrediente.
-        - is_active=True  → el ingrediente está habilitado.
-        - is_active=False → inhabilitado (sigue visible en admin con etiqueta "Inactivo").
-        Solo aplica a ingredientes no archivados (deleted_at IS NULL).
+        - is_active=True  → el ingrediente está habilitado (deleted_at = None).
+        - is_active=False → inhabilitado (deleted_at = ahora, sigue visible en admin con etiqueta "Inactivo").
         """
         with IngredienteUoW(self._session) as uow:
             obj = self._get_or_404(uow, id)
             obj.is_active = not obj.is_active
+            if not obj.is_active:
+                obj.deleted_at = datetime.now(timezone.utc)
+            else:
+                obj.deleted_at = None
             obj.updated_at = datetime.now(timezone.utc)
             return uow.ingredientes.update(obj)
 
@@ -94,6 +100,7 @@ class IngredienteService:
         """Soft delete: archiva el ingrediente (deleted_at). No se puede deshacer desde la UI normal."""
         with IngredienteUoW(self._session) as uow:
             obj = self._get_or_404(uow, id)
+            obj.is_active = False
             # soft_delete() hace flush(). El commit lo hace __exit__ del UoW.
             uow.ingredientes.soft_delete(obj)
 
@@ -103,13 +110,24 @@ class IngredienteService:
         es_alergeno: Optional[bool] = None,
     ) -> bytes:
         with IngredienteUoW(self._session) as uow:
-            items, _ = uow.ingredientes.list_with_filters(nombre, es_alergeno, skip=0, limit=10_000)
+            items, _ = uow.ingredientes.list_with_filters(
+                nombre, es_alergeno, skip=0, limit=10_000, incluir_inactivos=True
+            )
 
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Ingredientes"
 
-        headers = ["ID", "Nombre", "Descripción", "Alérgeno", "Activo", "Creado"]
+        headers = [
+            "ID",
+            "Nombre",
+            "Descripción",
+            "Alérgeno",
+            "Estado",
+            "Peso",
+            "Fecha de Desactivación",
+            "Creado",
+        ]
         ws.append(headers)
 
         for item in items:
@@ -118,7 +136,9 @@ class IngredienteService:
                 item.nombre,
                 item.descripcion or "",
                 "Sí" if item.es_alergeno else "No",
-                "Sí" if item.is_active else "No",
+                "Activo" if item.is_active else "Inactivo",
+                float(item.peso) if item.peso is not None else "",
+                item.deleted_at.strftime("%Y-%m-%d %H:%M") if item.deleted_at else "",
                 item.created_at.strftime("%Y-%m-%d %H:%M"),
             ])
 

@@ -39,6 +39,12 @@ def migrate_ingredientes_columns():
             except Exception as e:
                 print(f"Error migrando costo_unitario: {e}")
 
+        if "peso" not in columnas:
+            try:
+                conn.execute(text("ALTER TABLE ingredientes ADD COLUMN peso NUMERIC(10,3) DEFAULT NULL"))
+            except Exception as e:
+                print(f"Error migrando peso: {e}")
+
 
 def create_db_and_tables():
     # Importar todos los modelos para registrarlos en SQLModel.metadata

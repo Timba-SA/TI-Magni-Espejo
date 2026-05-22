@@ -13,7 +13,6 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 036-reestructuracion-stock-peso-ingredientes | Draft | Reestructuración de Stock, Peso y Gestión de Inactivos en Ingredientes | [specs](file:///c:/Users/Lauti/OneDrive/Escritorio/TI-Magni/specs/changes/036-reestructuracion-stock-peso-ingredientes/) |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
@@ -21,6 +20,7 @@ Estos changes fueron completados y archivados en `openspec/changes/archive/`.
 
 | Change ID | Estado | Contexto |
 |---|---|---|
+| 036-reestructuracion-stock-peso-ingredientes | Done | Reestructuración de Stock, Peso y Gestión de Inactivos en Ingredientes |
 | 035-migration-ingredientes-postgres | Done | Corrección de Migración de Ingredientes en PostgreSQL |
 | 034-landing-navbar-perfil | Done | Rediseño Landing (Hero) + Navbar + Página de Perfil |
 | 033-mejoras-gestion-usuarios | Done | Mejoras en la Gestión de Usuarios (Filtros, Soft Delete, Multi-roles, Excel completo) |

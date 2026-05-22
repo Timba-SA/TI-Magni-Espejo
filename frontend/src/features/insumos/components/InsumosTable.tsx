@@ -38,7 +38,7 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
             className="hover:bg-transparent"
             style={{ borderColor: "var(--tfs-border-subtle)" }}
           >
-            {["Nombre", "Descripción", "Stock Actual", "Costo Unitario", "Alérgeno", "Acciones"].map((h) => (
+            {["Nombre", "Descripción", "Stock Actual", "Peso", "Costo Unitario", "Alérgeno", "Acciones"].map((h) => (
               <TableHead
                 key={h}
                 className={`text-xs tracking-wider font-mono uppercase${h === "Alérgeno" ? " text-center" : ""}${h === "Acciones" ? " text-right" : ""}`}
@@ -57,7 +57,7 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
             return (
               <TableRow
                 key={insumo.id}
-                className={`transition-colors duration-150 ${esCritico ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04]" : ""}`}
+                className={`transition-colors duration-150 ${esCritico ? "bg-amber-500/[0.02] hover:bg-amber-500/[0.04]" : ""} ${!insumo.is_active ? "opacity-60" : ""}`}
                 style={{ borderColor: "var(--tfs-divider)" }}
               >
                 {/* Nombre */}
@@ -93,10 +93,10 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-mono font-bold ${esCritico ? "text-amber-500" : "text-[var(--tfs-text-primary)]"}`}>
-                        {Number(insumo.stock_actual).toFixed(3)}
+                        {Number(insumo.stock_actual)}
                       </span>
                       <span className="text-xs font-medium" style={{ color: "var(--tfs-text-muted)" }}>
-                        {simboloMedida}
+                        u
                       </span>
                     </div>
 
@@ -109,12 +109,30 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
                   </div>
                 </TableCell>
 
+                {/* Peso */}
+                <TableCell className="py-4">
+                  {insumo.peso !== null && insumo.peso !== undefined ? (
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-mono font-medium text-[var(--tfs-text-primary)]">
+                        {Number(insumo.peso).toFixed(1)}
+                      </span>
+                      <span className="text-xs font-medium" style={{ color: "var(--tfs-text-muted)" }}>
+                        {simboloMedida}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs" style={{ color: "var(--tfs-text-subtle)" }}>
+                      —
+                    </span>
+                  )}
+                </TableCell>
+
                 {/* Costo Unitario */}
                 <TableCell>
                   <span className="text-sm font-mono font-medium" style={{ color: "var(--tfs-text-primary)" }}>
                     $ {Number(insumo.costo_unitario).toFixed(2)}
                     <span className="text-xs ml-1" style={{ color: "var(--tfs-text-muted)" }}>
-                      / {simboloMedida}
+                      / u
                     </span>
                   </span>
                 </TableCell>

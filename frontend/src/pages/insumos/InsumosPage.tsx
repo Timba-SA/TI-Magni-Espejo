@@ -24,6 +24,7 @@ import type {
 const EMPTY_FILTERS: IngredienteFiltersState = {
   search: "",
   soloAlergenos: false,
+  mostrarInactivos: false,
 };
 
 // ─── Modal de confirmación de eliminación ─────────────────────────────────────
@@ -50,9 +51,9 @@ function ConfirmDeleteModal({
           ¿Eliminar este ingrediente?
         </h3>
         <p className="text-sm mb-6" style={{ color: "var(--tfs-text-muted)" }}>
-          Se eliminará{" "}
+          Se inhabilitará{" "}
           <span className="font-semibold" style={{ color: "var(--tfs-text-heading)" }}>{insumo.nombre}</span>{" "}
-          permanentemente del sistema.
+          de la lista de activos.
         </p>
         <div className="flex gap-3">
           <Button variant="ghost" className="flex-1" style={{ color: "var(--tfs-text-muted)" }} onClick={onCancel}>
@@ -88,7 +89,13 @@ export function InsumosPage() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const data = await getInsumos(skip, limit, filters.search, filters.soloAlergenos);
+      const data = await getInsumos(
+        skip,
+        limit,
+        filters.search,
+        filters.soloAlergenos,
+        filters.mostrarInactivos
+      );
       setInsumos(data.items);
       setTotal(data.total);
     } catch (error) {
@@ -103,7 +110,7 @@ export function InsumosPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setSkip(0);
-  }, [filters.search, filters.soloAlergenos]);
+  }, [filters.search, filters.soloAlergenos, filters.mostrarInactivos]);
 
   // ─── Filtrado ───────────────────────────────────────────────────────────────
   // No longer needed client-side since we filter in the backend.

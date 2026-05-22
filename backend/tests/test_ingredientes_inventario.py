@@ -114,3 +114,105 @@ def test_actualizar_inventario_ingrediente():
     assert float(data["stock_actual"]) == 15.75
     assert float(data["costo_unitario"]) == 450.0
     assert float(data["stock_minimo"]) == 2.0  # Mantiene valor previo
+
+
+def test_crear_ingrediente_con_peso():
+    # Creamos ingrediente con campo peso
+    payload = {
+        "nombre": "Queso Muzzarella",
+        "stock_actual": 10.0,
+        "stock_minimo": 2.0,
+        "costo_unitario": 100.0,
+        "peso": 0.500
+    }
+    response = client.post("/api/v1/ingredientes/", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert float(data["peso"]) == 0.5
+    
+    # Comprobar actualización de peso
+    update_payload = {"peso": 0.750}
+    response_update = client.patch(f"/api/v1/ingredientes/{data['id']}", json=update_payload)
+    assert response_update.status_code == 200
+    assert float(response_update.json()["peso"]) == 0.75
+
+
+def test_toggle_active_sincroniza_deleted_at():
+    # 1. Crear ingrediente
+    payload = {
+        "nombre": "Tomate Triturado",
+        "stock_actual": 5.0
+    }
+    response = client.post("/api/v1/ingredientes/", json=payload)
+    assert response.status_code == 201
+    ing_id = response.json()["id"]
+    assert response.json()["is_active"] is True
+    assert response.json()["deleted_at"] is None
+
+    # 2. Desactivar (toggle-active)
+    response_toggle = client.patch(f"/api/v1/ingredientes/{ing_id}/toggle-active")
+    assert response_toggle.status_code == 200
+    data_inactivo = response_toggle.json()
+    assert data_inactivo["is_active"] is False
+    assert data_inactivo["deleted_at"] is not None
+
+    # 3. Reactivar (toggle-active)
+    response_reactivar = client.patch(f"/api/v1/ingredientes/{ing_id}/toggle-active")
+    assert response_reactivar.status_code == 200
+    data_activo = response_reactivar.json()
+    assert data_activo["is_active"] is True
+    assert data_activo["deleted_at"] is None
+
+
+def test_listado_ingredientes_oculta_inactivos_por_defecto():
+    # 1. Crear ingrediente activo y otro que luego desactivamos
+    client.post("/api/v1/ingredientes/", json={"nombre": "Sal fina"})
+    resp_inactivo = client.post("/api/v1/ingredientes/", json={"nombre": "Pimienta negra"})
+    ing_inactivo_id = resp_inactivo.json()["id"]
+    client.patch(f"/api/v1/ingredientes/{ing_inactivo_id}/toggle-active")
+
+    # 2. Listar por defecto (oculta inactivos)
+    response_default = client.get("/api/v1/ingredientes/")
+    assert response_default.status_code == 200
+    items_default = response_default.json()["items"]
+    nombres_default = [item["nombre"] for item in items_default]
+    assert "Sal fina" in nombres_default
+    assert "Pimienta negra" not in nombres_default
+
+    # 3. Listar incluyendo inactivos
+    response_with_inactivos = client.get("/api/v1/ingredientes/?incluir_inactivos=true")
+    assert response_with_inactivos.status_code == 200
+    items_all = response_with_inactivos.json()["items"]
+    nombres_all = [item["nombre"] for item in items_all]
+    assert "Sal fina" in nombres_all
+    assert "Pimienta negra" in nombres_all
+
+
+def test_eliminar_ingrediente_hace_soft_delete_y_oculta():
+    # 1. Crear un ingrediente activo
+    payload = {"nombre": "Orégano seco", "stock_actual": 10.0}
+    response_create = client.post("/api/v1/ingredientes/", json=payload)
+    assert response_create.status_code == 201
+    ing_id = response_create.json()["id"]
+    
+    # 2. Eliminar (DELETE)
+    response_delete = client.delete(f"/api/v1/ingredientes/{ing_id}")
+    assert response_delete.status_code == 204  # status.HTTP_204_NO_CONTENT
+    # Nota: la respuesta de DELETE devuelve 204 sin contenido
+    
+    # 3. Listar por defecto (debe ocultarlo)
+    response_list = client.get("/api/v1/ingredientes/")
+    assert response_list.status_code == 200
+    items = response_list.json()["items"]
+    nombres = [item["nombre"] for item in items]
+    assert "Orégano seco" not in nombres
+    
+    # 4. Listar con incluir_inactivos=true (debe mostrarlo con is_active=False y deleted_at!=None)
+    response_list_all = client.get("/api/v1/ingredientes/?incluir_inactivos=true")
+    assert response_list_all.status_code == 200
+    items_all = response_list_all.json()["items"]
+    oregano = next(item for item in items_all if item["id"] == ing_id)
+    assert oregano["is_active"] is False
+    assert oregano["deleted_at"] is not None
+
+

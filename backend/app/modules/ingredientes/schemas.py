@@ -14,6 +14,7 @@ class IngredienteCreate(BaseModel):
     stock_actual: Decimal = Decimal("0.000")
     stock_minimo: Decimal = Decimal("0.000")
     costo_unitario: Decimal = Decimal("0.00")
+    peso: Optional[Decimal] = None
 
 
 class IngredienteUpdate(BaseModel):
@@ -24,6 +25,7 @@ class IngredienteUpdate(BaseModel):
     stock_actual: Optional[Decimal] = None
     stock_minimo: Optional[Decimal] = None
     costo_unitario: Optional[Decimal] = None
+    peso: Optional[Decimal] = None
 
 
 class IngredienteRead(BaseModel):
@@ -36,6 +38,7 @@ class IngredienteRead(BaseModel):
     stock_actual: Decimal
     stock_minimo: Decimal
     costo_unitario: Decimal
+    peso: Optional[Decimal] = None
     unidad_medida: Optional[UnidadMedidaRead] = None
     deleted_at: Optional[datetime] = None  # None = activo, fecha = archivado
     created_at: datetime

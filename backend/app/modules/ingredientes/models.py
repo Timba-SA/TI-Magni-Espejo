@@ -47,6 +47,14 @@ class Ingrediente(SQLModel, table=True):
             server_default="0.00",
         ),
     )
+    peso: Optional[Decimal] = Field(
+        default=None,
+        sa_column=Column(
+            Numeric(precision=10, scale=3),
+            nullable=True,
+            server_default=None,
+        ),
+    )
 
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

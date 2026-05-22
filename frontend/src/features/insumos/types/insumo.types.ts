@@ -18,6 +18,7 @@ export interface Ingrediente {
   stock_actual: number;
   stock_minimo: number;
   costo_unitario: number;
+  peso: number | null;
   unidad_medida: UnidadMedida | null;
   deleted_at: string | null;  // null = activo, fecha = archivado
   created_at: string;
@@ -32,6 +33,7 @@ export interface IngredienteFormData {
   stock_actual: number;
   stock_minimo: number;
   costo_unitario: number;
+  peso: number | null;
 }
 
 // ─── Tipos del estado de filtros ──────────────────────────────────────────────
@@ -39,6 +41,7 @@ export interface IngredienteFormData {
 export interface IngredienteFiltersState {
   search: string;
   soloAlergenos: boolean;
+  mostrarInactivos: boolean;
 }
 
 // ─── Alias legacy para compatibilidad con componentes que usen "Insumo" ──────

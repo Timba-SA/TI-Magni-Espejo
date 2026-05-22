@@ -56,6 +56,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<IngredienteFormData>({
     defaultValues: {
@@ -66,8 +67,13 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
       stock_actual: 0,
       stock_minimo: 0,
       costo_unitario: 0,
+      peso: null,
     },
   });
+
+  const selectedUnidadId = watch("unidad_medida_id");
+  const selectedUnidad = unidades.find((u) => u.id === Number(selectedUnidadId));
+  const simboloSeleccionado = selectedUnidad?.simbolo ?? "u";
 
   // Cargar unidades de medida físicas reales al abrir
   useEffect(() => {
@@ -91,6 +97,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               stock_actual: insumo.stock_actual,
               stock_minimo: insumo.stock_minimo,
               costo_unitario: insumo.costo_unitario,
+              peso: insumo.peso,
             }
           : {
               nombre: "",
@@ -100,6 +107,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               stock_actual: 0,
               stock_minimo: 0,
               costo_unitario: 0,
+              peso: null,
             }
       );
     }
@@ -108,10 +116,11 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
   const onSubmit = async (data: IngredienteFormData) => {
     setSaving(true);
     try {
-      // Mapear unidad_medida_id a number o null
+      // Mapear unidad_medida_id a number o null, y peso a number o null
       const mappedData: IngredienteFormData = {
         ...data,
         unidad_medida_id: data.unidad_medida_id ? Number(data.unidad_medida_id) : null,
+        peso: data.peso !== null && data.peso !== undefined && data.peso !== "" ? Number(data.peso) : null,
       };
       await onSave(mappedData);
     } finally {
@@ -240,42 +249,70 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
                 <span className="text-xs font-bold uppercase tracking-wider">Inventario & Costos</span>
               </div>
 
-              {/* Unidad de Medida */}
-              <div className="space-y-2">
-                <FieldLabel required>Unidad de Medida</FieldLabel>
-                <Controller
-                  name="unidad_medida_id"
-                  control={control}
-                  rules={{ required: "La unidad de medida es obligatoria" }}
-                  render={({ field }) => (
-                    <select
-                      value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                      className={`${inputClass} cursor-pointer`}
-                      style={{
-                        ...inputStyle,
-                        color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
-                      }}
-                    >
-                      <option value="" disabled style={{ background: "var(--tfs-card-bg, #18181b)", color: "var(--tfs-text-muted, #a1a1aa)" }}>
-                        Seleccioná una unidad
-                      </option>
-                      {unidades.map((u) => (
-                        <option
-                          key={u.id}
-                          value={u.id}
-                          style={{
-                            background: "var(--tfs-card-bg, #18181b)",
-                            color: "var(--tfs-text-primary, #f4f4f5)",
-                          }}
-                        >
-                          {u.nombre} ({u.simbolo}) — {u.tipo}
+              {/* Grid: Unidad de Medida y Peso */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Unidad de Medida */}
+                <div className="space-y-2">
+                  <FieldLabel required>Unidad de Medida</FieldLabel>
+                  <Controller
+                    name="unidad_medida_id"
+                    control={control}
+                    rules={{ required: "La unidad de medida es obligatoria" }}
+                    render={({ field }) => (
+                      <select
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        className={`${inputClass} cursor-pointer`}
+                        style={{
+                          ...inputStyle,
+                          color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
+                        }}
+                      >
+                        <option value="" disabled style={{ background: "var(--tfs-card-bg, #18181b)", color: "var(--tfs-text-muted, #a1a1aa)" }}>
+                          Seleccioná una unidad
                         </option>
-                      ))}
-                    </select>
-                  )}
-                />
-                <FieldError message={errors.unidad_medida_id?.message} />
+                        {unidades.map((u) => (
+                          <option
+                            key={u.id}
+                            value={u.id}
+                            style={{
+                              background: "var(--tfs-card-bg, #18181b)",
+                              color: "var(--tfs-text-primary, #f4f4f5)",
+                            }}
+                          >
+                            {u.nombre} ({u.simbolo}) — {u.tipo}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                  <FieldError message={errors.unidad_medida_id?.message} />
+                </div>
+
+                {/* Peso */}
+                <div className="space-y-2">
+                  <FieldLabel>Peso ({simboloSeleccionado})</FieldLabel>
+                  <Controller
+                    name="peso"
+                    control={control}
+                    rules={{
+                      min: { value: 0, message: "El peso no puede ser negativo" },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        type="number"
+                        step="0.001"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
+                        placeholder="0.000"
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                    )}
+                  />
+                  <FieldError message={errors.peso?.message} />
+                </div>
               </div>
 
               {/* Costo Unitario */}

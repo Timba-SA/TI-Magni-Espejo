@@ -16,7 +16,6 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
             select(Ingrediente)
             .where(
                 Ingrediente.id == id,
-                Ingrediente.deleted_at == None,
             )
             .options(selectinload(Ingrediente.unidad_medida))
         ).first()
@@ -26,7 +25,6 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
             select(Ingrediente)
             .where(
                 Ingrediente.nombre == nombre,
-                Ingrediente.deleted_at == None,
             )
             .options(selectinload(Ingrediente.unidad_medida))
         ).first()
@@ -37,8 +35,14 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
         es_alergeno: Optional[bool] = None,
         skip: int = 0,
         limit: int = 20,
+        incluir_inactivos: bool = False,
     ) -> tuple[list[Ingrediente], int]:
-        base = select(Ingrediente).where(Ingrediente.deleted_at == None)
+        base = select(Ingrediente)
+        if not incluir_inactivos:
+            base = base.where(
+                Ingrediente.is_active == True,
+                Ingrediente.deleted_at == None,
+            )
 
         if nombre:
             base = base.where(Ingrediente.nombre.ilike(f"%{nombre}%"))

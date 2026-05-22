@@ -26,9 +26,12 @@ def listar_ingredientes(
     es_alergeno: Annotated[Optional[bool], Query(description="Filtrar por alérgeno")] = None,
     skip: Annotated[int, Query(ge=0, description="Registros a saltar")] = 0,
     limit: Annotated[int, Query(ge=1, le=100, description="Límite de registros")] = 20,
+    incluir_inactivos: Annotated[bool, Query(description="Incluir ingredientes inactivos")] = False,
     _current_user: dict = Depends(get_current_user),
 ):
-    return IngredienteService(session).listar(nombre, es_alergeno, skip, limit)
+    return IngredienteService(session).listar(
+        nombre, es_alergeno, skip, limit, incluir_inactivos
+    )
 
 
 # ⚠️ IMPORTANTE: /exportar debe ir ANTES de /{id}

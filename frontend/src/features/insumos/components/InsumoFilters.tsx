@@ -11,10 +11,11 @@ interface InsumoFiltersProps {
 const EMPTY_FILTERS: IngredienteFiltersState = {
   search: "",
   soloAlergenos: false,
+  mostrarInactivos: false,
 };
 
 export function InsumoFilters({ filters, onChange }: InsumoFiltersProps) {
-  const hasActiveFilters = filters.search !== "" || filters.soloAlergenos;
+  const hasActiveFilters = filters.search !== "" || filters.soloAlergenos || filters.mostrarInactivos;
 
   return (
     <div className="flex flex-wrap gap-3 items-center">
@@ -49,6 +50,19 @@ export function InsumoFilters({ filters, onChange }: InsumoFiltersProps) {
         }
       >
         ⚠ Solo alérgenos
+      </button>
+
+      {/* Mostrar inactivos */}
+      <button
+        onClick={() => onChange({ ...filters, mostrarInactivos: !filters.mostrarInactivos })}
+        className="h-9 px-4 rounded-md text-sm font-medium border transition-all duration-200"
+        style={
+          filters.mostrarInactivos
+            ? { background: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)", color: "#EF4444" }
+            : { background: "var(--tfs-input-bg)", borderColor: "var(--tfs-input-border)", color: "var(--tfs-text-muted)" }
+        }
+      >
+        👁 Mostrar inactivos
       </button>
 
       {/* Limpiar */}
