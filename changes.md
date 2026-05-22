@@ -13,7 +13,7 @@ Este documento mantiene el registro de todos los cambios gestionados bajo la met
 
 | Change ID | Estado | Contexto | Artefactos |
 |---|---|---|---|
-| 037-seguridad-httponly-cookies-rbac | Done | Robustecimiento de Seguridad mediante Cookies HttpOnly y Control de Accesos | [specs](file:///c:/Users/Lauti/OneDrive/Escritorio/TI-Magni/specs/changes/037-seguridad-httponly-cookies-rbac/) |
+| 037-seguridad-httponly-cookies-rbac | Done | Robustecimiento de Seguridad mediante Cookies HttpOnly y Control de Accesos | [specs](file:///c:/Users/Lauti/OneDrive/Escritorio/TI-Magni/openspec/changes/archive/2026-05-22/037-seguridad-httponly-cookies-rbac/) |
 
 ## Registro de Cambios Archivados (Frontend y Baseline)
 
