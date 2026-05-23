@@ -1,9 +1,9 @@
-import { MenuExperience } from "@/components/landing/MenuExperience";
+import { CatalogoExperience } from "@/features/catalogo/components/CatalogoExperience";
 
 export function MenuPage() {
   return (
-    <div className="min-h-screen bg-[#0B0B0B] pt-12">
-      <MenuExperience />
+    <div className="min-h-screen bg-[#0B0B0B]">
+      <CatalogoExperience />
     </div>
   );
 }
