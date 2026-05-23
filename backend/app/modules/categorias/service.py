@@ -24,9 +24,36 @@ class CategoriaService:
 
     # ── Métodos públicos ──────────────────────────────────────────────────────
 
-    def listar(self) -> list[Categoria]:
+    def listar(self, skip: int = 0, limit: int = 20, include_deleted: bool = False) -> tuple[list[Categoria], int]:
         with CategoriaUoW(self._session) as uow:
-            return uow.categorias.get_all_activas()
+            return uow.categorias.get_all_activas_paginated(skip, limit, include_deleted)
+
+    def exportar(self) -> bytes:
+        import io
+        import openpyxl
+
+        with CategoriaUoW(self._session) as uow:
+            items, _ = uow.categorias.get_all_activas_paginated(0, 10000)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Categorias"
+
+        headers = ["ID", "Nombre", "Descripción", "Creada"]
+        ws.append(headers)
+
+        for item in items:
+            ws.append([
+                item.id,
+                item.nombre,
+                item.descripcion or "",
+                item.created_at.strftime("%Y-%m-%d %H:%M"),
+            ])
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer.read()
 
     def obtener(self, id: int) -> Categoria:
         with CategoriaUoW(self._session) as uow:
@@ -78,6 +105,9 @@ class CategoriaService:
         return categoria
 
     def eliminar(self, id: int) -> None:
+        from app.modules.productos.models import Producto, ProductoCategoria
+        from sqlmodel import select
+
         with CategoriaUoW(self._session) as uow:
             categoria = uow.categorias.get_by_id(id)
             if not categoria or categoria.deleted_at is not None:
@@ -85,5 +115,45 @@ class CategoriaService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Categoría con id={id} no encontrada.",
                 )
-            categoria.deleted_at = datetime.utcnow()
+            
+            # Convalidación de eliminación suave: no se puede eliminar si tiene productos activos (HTTP 409)
+            productos_activos = self._session.exec(
+                select(ProductoCategoria)
+                .join(Producto, ProductoCategoria.producto_id == Producto.id)
+                .where(
+                    ProductoCategoria.categoria_id == id,
+                    Producto.deleted_at == None
+                )
+            ).first()
+
+            if productos_activos:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="No se puede eliminar la categoría porque tiene productos activos asociados."
+                )
+
+            uow.categorias.soft_delete(categoria)
+            # __exit__ del UoW hace commit
+
+
+    def toggle_active(self, id: int) -> Categoria:
+        """
+        Invierte el estado is_active de la categoría.
+        - is_active=True  → categoría habilitada (comportamiento normal).
+        - is_active=False → inhabilitada (sigue visible en admin con etiqueta "Inactivo").
+        Solo aplica a categorías no archivadas (deleted_at IS NULL).
+        """
+        with CategoriaUoW(self._session) as uow:
+            categoria = uow.categorias.get_by_id(id)
+            if not categoria or categoria.deleted_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Categoría con id={id} no encontrada.",
+                )
+            categoria.is_active = not categoria.is_active
+            categoria.updated_at = datetime.utcnow()
             uow.categorias.add(categoria)
+
+        self._session.refresh(categoria)
+        return categoria
+
