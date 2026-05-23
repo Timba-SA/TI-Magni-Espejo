@@ -5,8 +5,8 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import {
   getCurrentUser,
   getSessionRemainingMs,
-  logout,
 } from "@/features/auth/services/authService";
+import { useAuth } from "@/hooks/useAuth";
 
 const CHECK_INTERVAL_MS = 60_000; // chequea cada 1 minuto
 
@@ -14,6 +14,7 @@ export function AdminLayout() {
   const user = getCurrentUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   // ─── Auto-logout al expirar la sesión ──────────────────────────────────────
   useEffect(() => {
@@ -38,7 +39,7 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0B0B0B] overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--tfs-bg-primary)" }}>
       {/* Sidebar */}
       <AdminSidebar
         user={user}

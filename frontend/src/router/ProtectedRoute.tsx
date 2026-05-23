@@ -23,7 +23,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const user = getCurrentUser();
 
   // Cliente no tiene acceso al panel de gestión
-  if (user?.rol === "Cliente") {
+  if (user?.rol === "CLIENT") {
     return <Navigate to="/" replace />;
   }
 

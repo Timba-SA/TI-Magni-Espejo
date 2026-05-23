@@ -1,9 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
-// Importación lazy para evitar dependencia circular — authService importa fetchApi,
-// fetchApi necesita getToken de authService.
 function getStoredToken(): string | null {
   return localStorage.getItem("the_food_store_token");
+}
+
+/** Limpia la sesión y redirige al login cuando el token expira. */
+export function handleTokenExpired(): void {
+  localStorage.removeItem("the_food_store_token");
+  localStorage.removeItem("the_food_store_session");
+  // Redirige solo si no estamos ya en el login
+  if (!window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
+  }
 }
 
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -18,6 +26,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   };
 
   const response = await fetch(url, {
+    credentials: "include",
     ...options,
     headers: {
       ...defaultHeaders,
@@ -26,14 +35,39 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   });
 
   if (!response.ok) {
+    // 401 o 403 → token expirado o inválido / no autorizado: limpiar sesión y redirigir al login
+    if (response.status === 401 || response.status === 403) {
+      handleTokenExpired();
+      const msg = response.status === 401
+        ? "Tu sesión expiró. Iniciá sesión nuevamente."
+        : "No tenés permisos para realizar esta acción.";
+      throw new Error(msg);
+    }
+
     let errorMessage = "Ocurrió un error en la solicitud";
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || errorData.message || errorMessage;
+      if (Array.isArray(errorData.detail)) {
+        // 422 Pydantic: detail es un array de { loc, msg, type }
+        errorMessage = errorData.detail
+          .map((e: { loc?: string[]; msg: string }) =>
+            e.loc ? `${e.loc.slice(-1)[0]}: ${e.msg}` : e.msg
+          )
+          .join(" | ");
+      } else if (typeof errorData.detail === "string") {
+        errorMessage = errorData.detail;
+      } else if (typeof errorData.message === "string") {
+        errorMessage = errorData.message;
+      }
     } catch {
       // Si la respuesta no es JSON, mantenemos el mensaje de error por defecto
     }
     throw new Error(errorMessage);
+  }
+
+  // 204 No Content → no hay body, no intentar parsear JSON
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   const contentType = response.headers.get("content-type");
