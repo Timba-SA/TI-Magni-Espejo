@@ -1,71 +1,92 @@
-# TODO: Implementar modelos del Dominio 3 - Ventas
-#
-# --- EstadoPedido <<Catalog>> ---
-# PK semántica: codigo VARCHAR(20)
-# Seed obligatorio: PENDIENTE | CONFIRMADO | EN_PREP | EN_CAMINO | ENTREGADO | CANCELADO
-# - descripcion: VARCHAR(80) {NN}
-# - orden: INT {NN}  ← define el orden visual en UI
-# - es_terminal: BOOLEAN {NN}  ← true = no admite transiciones salientes
-#
-# FSM (validar en Service, NUNCA en Router):
-# PENDIENTE  → CONFIRMADO, CANCELADO
-# CONFIRMADO → EN_PREP, CANCELADO
-# EN_PREP    → EN_CAMINO, CANCELADO*  (*solo ADMIN/PEDIDOS)
-# EN_CAMINO  → ENTREGADO
-# ENTREGADO  → (terminal)
-# CANCELADO  → (terminal)
-#
-# RN-01: es_terminal=true → 0 transiciones salientes
-# RN-05: motivo obligatorio si estado_hacia = CANCELADO
-#
-# --- FormaPago <<Catalog>> ---
-# PK semántica: codigo VARCHAR(20)
-# Seed: MERCADOPAGO | EFECTIVO | TRANSFERENCIA
-# - descripcion: VARCHAR(80) {NN}
-# - habilitado: BOOLEAN {NN, DEFAULT true}
-#   habilitado=false: oculto en nuevo checkout, visible en historial
-#
-# --- Pedido <<Table>> ---
-# - id: BIGSERIAL {PK}
-# - usuario_id: BIGINT {FK → Usuario.id, NN}
-# - direccion_id: BIGINT {FK → DireccionEntrega.id, SET NULL}
-#   NULL = retiro en local (válido)
-# - estado_codigo: VARCHAR(20) {FK → EstadoPedido.codigo, NN}
-# - forma_pago_codigo: VARCHAR(20) {FK → FormaPago.codigo, NN}
-# Snapshot monetario (inmutable desde creación):
-# - subtotal: DECIMAL(10,2) {NN, snap}
-# - descuento: DECIMAL(10,2) {NN, DEFAULT 0.00, snap}
-# - costo_envio: DECIMAL(10,2) {NN, DEFAULT 50.00, snap}
-# - total: DECIMAL(10,2) {NN, CHECK >= 0, snap}
-#   total = subtotal - descuento + costo_envio
-# - notas: TEXT
-# - created_at, updated_at: TIMESTAMPTZ {NN}
-# - deleted_at: TIMESTAMPTZ (soft-delete)
-#
-# --- DetallePedido <<Table>> ---
-# PK compuesta: (pedido_id, producto_id)
-# - pedido_id: FK → Pedido.id CASCADE
-# - producto_id: FK → Producto.id RESTRICT
-#   RESTRICT: preserva integridad histórica
-# - cantidad: SMALLINT {NN, CHECK >= 1}
-# Snapshot (inmutable, RN-04):
-# - nombre_snapshot: VARCHAR(200) {NN, snap}
-# - precio_snapshot: DECIMAL(10,2) {NN, CHECK >= 0, snap}
-# - subtotal_snap: DECIMAL(10,2) {NN, snap}  = precio_snapshot * cantidad
-# - personalizacion: INTEGER[]  ← IDs de Ingrediente removidos
-#   Solo es_removible=true. Ver ProductoIngrediente.
-# - created_at: TIMESTAMPTZ {NN}
-# SIN updated_at: fila INMUTABLE por diseño (RN-04)
-#
-# --- HistorialEstadoPedido <<Append>> ---
-# APPEND-ONLY: solo INSERT, NUNCA UPDATE ni DELETE (RN-03)
-# - id: BIGSERIAL {PK}
-# - pedido_id: BIGINT {FK → Pedido.id, CASCADE}
-# - estado_desde: VARCHAR(20) {FK → EstadoPedido.codigo, NULL}
-#   NULL = transición inicial / creación del pedido (RN-02)
-# - estado_hacia: VARCHAR(20) {FK → EstadoPedido.codigo, NN}
-# - usuario_id: BIGINT {FK → Usuario.id, NULL}
-#   NULL = actor sistema (ej: webhook MP)
-# - motivo: TEXT  ← obligatorio si estado_hacia = CANCELADO (RN-05)
-# - created_at: TIMESTAMPTZ {NN, append-only}
-# SIN updated_at por diseño
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional, TYPE_CHECKING
+from sqlmodel import SQLModel, Field, Relationship, Column, Numeric
+from sqlalchemy import JSON, UniqueConstraint
+
+if TYPE_CHECKING:
+    from app.modules.usuarios.models import Usuario
+    from app.modules.direcciones.models import DireccionEntrega
+    from app.modules.productos.models import Producto
+
+class EstadoPedido(SQLModel, table=True):
+    __tablename__ = "estados_pedido"
+    
+    codigo: str = Field(primary_key=True, max_length=20)
+    descripcion: str = Field(max_length=80, nullable=False)
+    orden: int = Field(nullable=False)
+    es_terminal: bool = Field(nullable=False)
+
+class FormaPago(SQLModel, table=True):
+    __tablename__ = "formas_pago"
+    
+    codigo: str = Field(primary_key=True, max_length=20)
+    descripcion: str = Field(max_length=80, nullable=False)
+    habilitado: bool = Field(default=True, nullable=False)
+
+
+class Pedido(SQLModel, table=True):
+    __tablename__ = "pedidos"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
+    direccion_id: Optional[int] = Field(foreign_key="direcciones_entrega.id", nullable=True)
+    estado_codigo: str = Field(foreign_key="estados_pedido.codigo", default="PENDIENTE", nullable=False)
+    forma_pago_codigo: str = Field(foreign_key="formas_pago.codigo", nullable=False)
+    
+    subtotal: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    descuento: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    costo_envio: Decimal = Field(default=Decimal("50.00"), sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    total: Decimal = Field(default=Decimal("0.00"), sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    
+    notas: Optional[str] = Field(default=None)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    deleted_at: Optional[datetime] = Field(default=None)
+
+    # Relaciones
+    usuario: Optional["Usuario"] = Relationship()
+    direccion: Optional["DireccionEntrega"] = Relationship()
+    detalles: list["DetallePedido"] = Relationship(back_populates="pedido")
+    historial: list["HistorialEstadoPedido"] = Relationship(back_populates="pedido")
+
+
+class DetallePedido(SQLModel, table=True):
+    __tablename__ = "detalles_pedido"
+    
+    __table_args__ = (
+        UniqueConstraint("pedido_id", "producto_id", name="uq_pedido_producto"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pedido_id: int = Field(foreign_key="pedidos.id", nullable=False)
+    producto_id: int = Field(foreign_key="productos.id", nullable=False)
+    cantidad: int = Field(nullable=False)
+    
+    nombre_snapshot: str = Field(max_length=200, nullable=False)
+    precio_snapshot: Decimal = Field(sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    subtotal_snap: Decimal = Field(sa_column=Column(Numeric(precision=10, scale=2), nullable=False))
+    personalizacion: Optional[list[int]] = Field(default=None, sa_column=Column(JSON, nullable=True))
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+    # Relaciones
+    pedido: Optional["Pedido"] = Relationship(back_populates="detalles")
+    producto: Optional["Producto"] = Relationship()
+
+
+class HistorialEstadoPedido(SQLModel, table=True):
+    __tablename__ = "historial_estados_pedido"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pedido_id: int = Field(foreign_key="pedidos.id", nullable=False)
+    
+    estado_desde: Optional[str] = Field(foreign_key="estados_pedido.codigo", nullable=True)
+    estado_hacia: str = Field(foreign_key="estados_pedido.codigo", nullable=False)
+    usuario_id: Optional[int] = Field(default=None, foreign_key="usuarios.id", nullable=True)
+    
+    motivo: Optional[str] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+    # Relaciones
+    pedido: Optional["Pedido"] = Relationship(back_populates="historial")

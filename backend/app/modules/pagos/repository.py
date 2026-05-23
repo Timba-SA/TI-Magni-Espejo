@@ -1,12 +1,34 @@
-# TODO: Implementar repositorio de pagos
-#
-# PagoRepository(BaseRepository[Pago])
-#
-# Métodos adicionales:
-# + get_by_pedido(pedido_id: int) → list[Pago]
-# + get_by_external_reference(external_reference: str) → Pago | None
-# + get_by_idempotency_key(key: str) → Pago | None
-#   (para detectar reintentos y evitar cobros duplicados)
-# + get_by_mp_payment_id(mp_payment_id: int) → Pago | None
-#
-# Regla: NUNCA commit/rollback aquí.
+from typing import Optional
+from sqlmodel import Session, select
+
+from app.core.repository import BaseRepository
+from app.modules.pagos.models import Pago
+
+
+class PagoRepository(BaseRepository[Pago]):
+    def __init__(self, session: Session):
+        super().__init__(Pago, session)
+
+    def get_by_pedido(self, pedido_id: int) -> list[Pago]:
+        """Retorna todos los pagos asociados a un pedido."""
+        return self.session.exec(
+            select(Pago).where(Pago.pedido_id == pedido_id)
+        ).all()
+
+    def get_by_external_reference(self, external_reference: str) -> Optional[Pago]:
+        """Busca un pago por su external_reference único."""
+        return self.session.exec(
+            select(Pago).where(Pago.external_reference == external_reference)
+        ).first()
+
+    def get_by_idempotency_key(self, key: str) -> Optional[Pago]:
+        """Busca un pago por su idempotency_key único para control de reintentos."""
+        return self.session.exec(
+            select(Pago).where(Pago.idempotency_key == key)
+        ).first()
+
+    def get_by_mp_payment_id(self, mp_payment_id: int) -> Optional[Pago]:
+        """Busca un pago por el ID de transacción de MercadoPago."""
+        return self.session.exec(
+            select(Pago).where(Pago.mp_payment_id == mp_payment_id)
+        ).first()
