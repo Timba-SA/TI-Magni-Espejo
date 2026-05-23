@@ -5,104 +5,160 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
-import type { Insumo } from "../types/insumo.types";
-import { formatCurrency } from "@/utils/formatCurrency";
-import { formatDate } from "@/utils/dateUtils";
+import type { Ingrediente } from "../types/insumo.types";
 
 interface InsumoDetailModalProps {
   open: boolean;
-  insumo: Insumo | null;
+  insumo: Ingrediente | null;
   onClose: () => void;
 }
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between items-start py-3 border-b border-[#F8F8F8]/[0.05] last:border-0">
-      <span className="text-xs tracking-wider text-[#F8F8F8]/35 uppercase font-mono">
+    <div
+      className="flex justify-between items-start py-3 last:border-0"
+      style={{ borderBottom: "1px solid var(--tfs-border-subtle)" }}
+    >
+      <span
+        className="text-xs tracking-wider uppercase font-mono"
+        style={{ color: "var(--tfs-text-muted)" }}
+      >
         {label}
       </span>
-      <span className="text-sm text-[#F8F8F8] font-medium text-right max-w-[55%]">
+      <span
+        className="text-sm font-medium text-right max-w-[60%]"
+        style={{ color: "var(--tfs-text-heading)" }}
+      >
         {value}
       </span>
     </div>
   );
 }
 
-export function InsumoDetailModal({
-  open,
-  insumo,
-  onClose,
-}: InsumoDetailModalProps) {
+export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalProps) {
   if (!insumo) return null;
-
-  const stockBajo = insumo.stockActual <= insumo.stockMinimo;
-  const valorStock = insumo.stockActual * insumo.precioUnitario;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="bg-[#111111] border-[#F8F8F8]/10 text-[#F8F8F8] max-w-lg">
+      <DialogContent
+        className="max-w-md"
+        style={{
+          background: "var(--tfs-card-bg)",
+          border: "1px solid var(--tfs-border-mid)",
+          color: "var(--tfs-text-heading)",
+        }}
+      >
         <DialogHeader>
-          <DialogTitle className="text-[#F8F8F8] text-lg flex items-center gap-3">
+          <DialogTitle
+            className="text-lg flex items-center gap-3"
+            style={{ color: "var(--tfs-text-heading)" }}
+          >
             {insumo.nombre}
-            {stockBajo && (
+            {insumo.es_alergeno && (
               <span className="flex items-center gap-1 text-xs font-normal text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
                 <AlertTriangle size={11} />
-                Stock bajo
+                Alérgeno
               </span>
             )}
           </DialogTitle>
         </DialogHeader>
 
         <div className="py-2">
-          {/* Descripción */}
           {insumo.descripcion && (
-            <p className="text-sm text-[#F8F8F8]/50 mb-5 pb-4 border-b border-[#F8F8F8]/[0.05] leading-relaxed">
+            <p
+              className="text-sm mb-5 pb-4 leading-relaxed"
+              style={{
+                color: "var(--tfs-text-muted)",
+                borderBottom: "1px solid var(--tfs-border-subtle)",
+              }}
+            >
               {insumo.descripcion}
             </p>
           )}
 
-          <DetailRow label="Categoría" value={insumo.categoria} />
-          <DetailRow label="Unidad de medida" value={insumo.unidadMedida} />
+          <DetailRow label="ID" value={`#${insumo.id}`} />
           <DetailRow
-            label="Stock actual"
+            label="Stock Actual"
             value={
-              <span className={stockBajo ? "text-amber-400 font-bold" : ""}>
-                {insumo.stockActual} {insumo.unidadMedida}
+              <div className="flex flex-col items-end gap-1">
+                <span className="font-mono font-bold">
+                  {Number(insumo.stock_actual)} u
+                </span>
+                {insumo.stock_actual <= insumo.stock_minimo && insumo.stock_minimo > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
+                    <AlertTriangle size={8} />
+                    Stock Crítico
+                  </span>
+                )}
+              </div>
+            }
+          />
+          {insumo.peso !== null && insumo.peso !== undefined && (
+            <DetailRow
+              label="Peso Unitario"
+              value={
+                <span className="font-mono">
+                  {Number(insumo.peso).toFixed(1)} {insumo.unidad_medida?.simbolo ?? "u"}
+                </span>
+              }
+            />
+          )}
+          <DetailRow
+            label="Stock Mínimo Alerta"
+            value={
+              <span className="font-mono">
+                {Number(insumo.stock_minimo)} u
               </span>
             }
           />
           <DetailRow
-            label="Stock mínimo"
-            value={`${insumo.stockMinimo} ${insumo.unidadMedida}`}
-          />
-          <DetailRow
-            label="Precio unitario"
-            value={formatCurrency(insumo.precioUnitario)}
-          />
-          <DetailRow
-            label="Valor del stock"
+            label="Costo Unitario"
             value={
-              <span className="text-[#FF5A00]">{formatCurrency(valorStock)}</span>
-            }
-          />
-          <DetailRow
-            label="Estado"
-            value={
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                  insumo.estado === "Activo"
-                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
-                    : "bg-[#F8F8F8]/5 text-[#F8F8F8]/30 border border-[#F8F8F8]/10"
-                }`}
-              >
-                {insumo.estado}
+              <span className="font-mono">
+                $ {Number(insumo.costo_unitario).toFixed(2)} / u
               </span>
             }
           />
-          <DetailRow label="Fecha de alta" value={formatDate(insumo.fechaAlta)} />
+          <DetailRow
+            label="Alérgeno"
+            value={
+              insumo.es_alergeno ? (
+                <span className="inline-flex items-center gap-1 text-red-400 text-xs">
+                  <AlertTriangle size={11} /> Sí, es alérgeno
+                </span>
+              ) : (
+                <span style={{ color: "var(--tfs-text-muted)" }}>No</span>
+              )
+            }
+          />
+          {!insumo.is_active && (
+            <>
+              <DetailRow
+                label="Estado"
+                value={
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                    Inactivo
+                  </span>
+                }
+              />
+              {insumo.deleted_at && (
+                <DetailRow
+                  label="Fecha de Desactivación"
+                  value={new Date(insumo.deleted_at).toLocaleString("es-AR")}
+                />
+              )}
+            </>
+          )}
+          <DetailRow
+            label="Creado"
+            value={new Date(insumo.created_at).toLocaleString("es-AR")}
+          />
+          <DetailRow
+            label="Actualizado"
+            value={new Date(insumo.updated_at).toLocaleString("es-AR")}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

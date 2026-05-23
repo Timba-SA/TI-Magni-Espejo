@@ -8,38 +8,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { Insumo, InsumoFormData } from "../types/insumo.types";
-import { UNIDADES_MEDIDA } from "../types/insumo.types";
-import { getCategorias } from "@/features/categorias/services/categoriasService";
-import type { Categoria } from "@/features/categorias/types/categoria.types";
+import type { Ingrediente, IngredienteFormData, UnidadMedida } from "../types/insumo.types";
+import { getUnidadesMedida } from "../services/insumosService";
 
 interface InsumoFormProps {
   open: boolean;
-  insumo?: Insumo | null;
+  insumo?: Ingrediente | null;
   onClose: () => void;
-  onSave: (data: InsumoFormData) => void;
+  onSave: (data: IngredienteFormData) => void;
+  serverError?: string | null;
 }
 
-function FieldLabel({
-  children,
-  required,
-}: {
-  children: React.ReactNode;
-  required?: boolean;
-}) {
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="text-[10px] tracking-[0.15em] text-white/35 uppercase font-mono flex items-center gap-1">
+    <label className="text-[10px] tracking-[0.15em] uppercase font-mono flex items-center gap-1" style={{ color: "var(--tfs-text-muted)" }}>
       {children}
-      {required && (
-        <span className="text-[#FF5A00] text-[10px] leading-none">*</span>
-      )}
+      {required && <span className="text-[#FF5A00] text-[10px] leading-none">*</span>}
     </label>
   );
 }
@@ -55,39 +39,51 @@ function FieldError({ message }: { message?: string }) {
 }
 
 const inputClass =
-  "w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm text-white/90 placeholder:text-white/20 outline-none focus:border-[#FF5A00]/40 focus:ring-2 focus:ring-[#FF5A00]/10 focus:bg-white/[0.05] transition-all duration-200 h-10 hover:border-white/15 hover:bg-white/[0.04]";
+  "w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all duration-200";
 
-const selectTriggerClass =
-  "bg-white/[0.03] border border-white/[0.08] text-white/90 h-10 text-sm rounded-xl hover:border-white/15 hover:bg-white/[0.04] focus:ring-2 focus:ring-[#FF5A00]/10 focus:border-[#FF5A00]/40 transition-all duration-200 data-[state=open]:border-[#FF5A00]/40 data-[state=open]:bg-white/[0.05]";
+const inputStyle = {
+  background: "var(--tfs-input-bg)",
+  border: "1px solid var(--tfs-input-border)",
+  color: "var(--tfs-text-primary)",
+};
 
-const selectContentClass =
-  "bg-[#0e0e0e]/95 backdrop-blur-xl border-white/[0.08] text-white shadow-2xl rounded-xl";
-
-export function InsumoForm({ open, insumo, onClose, onSave }: InsumoFormProps) {
+export function InsumoForm({ open, insumo, onClose, onSave, serverError }: InsumoFormProps) {
   const isEditing = !!insumo;
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-
-  useEffect(() => {
-    getCategorias().then(setCategorias).catch(() => setCategorias([]));
-  }, []);
+  const [saving, setSaving] = useState(false);
+  const [unidades, setUnidades] = useState<UnidadMedida[]>([]);
 
   const {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<InsumoFormData>({
+  } = useForm<IngredienteFormData>({
     defaultValues: {
       nombre: "",
       descripcion: "",
-      categoria: "",
-      unidadMedida: "",
-      stockActual: 0,
-      stockMinimo: 0,
-      precioUnitario: 0,
-      estado: "Activo",
+      es_alergeno: false,
+      unidad_medida_id: null,
+      stock_actual: 0,
+      stock_minimo: 0,
+      costo_unitario: 0,
+      peso: null,
     },
   });
+
+  const selectedUnidadId = watch("unidad_medida_id");
+  const selectedUnidad = unidades.find((u) => u.id === Number(selectedUnidadId));
+  const simboloSeleccionado = selectedUnidad?.simbolo ?? "u";
+
+  // Cargar unidades de medida físicas reales al abrir
+  useEffect(() => {
+    if (open) {
+      getUnidadesMedida().then((res) => {
+        // Ordenar alfabéticamente para mayor prolijidad
+        setUnidades(res.sort((a, b) => a.nombre.localeCompare(b.nombre)));
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -95,54 +91,63 @@ export function InsumoForm({ open, insumo, onClose, onSave }: InsumoFormProps) {
         insumo
           ? {
               nombre: insumo.nombre,
-              descripcion: insumo.descripcion,
-              categoria: insumo.categoria,
-              unidadMedida: insumo.unidadMedida,
-              stockActual: insumo.stockActual,
-              stockMinimo: insumo.stockMinimo,
-              precioUnitario: insumo.precioUnitario,
-              estado: insumo.estado,
+              descripcion: insumo.descripcion ?? "",
+              es_alergeno: insumo.es_alergeno,
+              unidad_medida_id: insumo.unidad_medida_id,
+              stock_actual: insumo.stock_actual,
+              stock_minimo: insumo.stock_minimo,
+              costo_unitario: insumo.costo_unitario,
+              peso: insumo.peso,
             }
           : {
               nombre: "",
               descripcion: "",
-              categoria: "",
-              unidadMedida: "",
-              stockActual: 0,
-              stockMinimo: 0,
-              precioUnitario: 0,
-              estado: "Activo",
+              es_alergeno: false,
+              unidad_medida_id: null,
+              stock_actual: 0,
+              stock_minimo: 0,
+              costo_unitario: 0,
+              peso: null,
             }
       );
     }
   }, [open, insumo, reset]);
 
-  const onSubmit = (data: InsumoFormData) => {
-    onSave(data);
+  const onSubmit = async (data: IngredienteFormData) => {
+    setSaving(true);
+    try {
+      // Mapear unidad_medida_id a number o null, y peso a number o null
+      const mappedData: IngredienteFormData = {
+        ...data,
+        unidad_medida_id: data.unidad_medida_id ? Number(data.unidad_medida_id) : null,
+        peso: data.peso !== null && data.peso !== undefined && data.peso !== "" ? Number(data.peso) : null,
+      };
+      await onSave(mappedData);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/[0.07] text-white max-w-lg max-h-[92vh] overflow-y-auto shadow-[0_0_80px_rgba(0,0,0,0.8)] rounded-2xl p-0">
-        {/* Header con gradiente premium */}
-        <div className="relative px-7 pt-7 pb-5 border-b border-white/[0.06]">
-          {/* Glow accent top */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-[#FF5A00]/60 to-transparent" />
-
+      <DialogContent
+        className="max-w-3xl w-full shadow-2xl rounded-2xl p-0 overflow-hidden"
+        style={{
+          background: "var(--tfs-card-bg)",
+          border: "1px solid var(--tfs-border-mid)",
+          color: "var(--tfs-text-heading)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className="relative px-7 pt-7 pb-5"
+          style={{ borderBottom: "1px solid var(--tfs-border-subtle)" }}
+        >
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-[#FF5A00]/60 to-transparent" />
           <DialogHeader>
             <div className="flex items-center gap-3">
-              {/* Ícono decorativo */}
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF5A00]/20 to-[#FF5A00]/5 border border-[#FF5A00]/20 flex items-center justify-center flex-shrink-0">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#FF5A00"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5A00" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   {isEditing ? (
                     <>
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -150,239 +155,272 @@ export function InsumoForm({ open, insumo, onClose, onSave }: InsumoFormProps) {
                     </>
                   ) : (
                     <>
-                      <rect x="2" y="3" width="20" height="14" rx="2" />
-                      <line x1="12" y1="17" x2="12" y2="21" />
-                      <line x1="8" y1="21" x2="16" y2="21" />
-                      <line x1="12" y1="8" x2="12" y2="13" />
-                      <line x1="9.5" y1="10.5" x2="14.5" y2="10.5" />
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
                     </>
                   )}
                 </svg>
               </div>
-
               <div>
-                <DialogTitle className="text-white/95 text-base font-semibold tracking-tight">
-                  {isEditing ? "Editar insumo" : "Nuevo insumo"}
+                <DialogTitle className="text-base font-semibold tracking-tight" style={{ color: "var(--tfs-text-heading)" }}>
+                  {isEditing ? "Editar ingrediente" : "Nuevo ingrediente"}
                 </DialogTitle>
-                <p className="text-white/30 text-xs mt-0.5 font-mono tracking-wider">
-                  {isEditing ? `ID #${insumo?.id}` : "Completá los datos del producto"}
+                <p className="text-xs mt-0.5 font-mono tracking-wider" style={{ color: "var(--tfs-text-muted)" }}>
+                  {isEditing ? `ID #${insumo?.id}` : "Completá los datos físicos y de control de stock"}
                 </p>
               </div>
             </div>
           </DialogHeader>
         </div>
 
-        {/* Body del formulario */}
-        <form onSubmit={handleSubmit(onSubmit)} className="px-7 py-5 space-y-5">
+        {/* Body */}
+        <form onSubmit={handleSubmit(onSubmit)} className="px-7 py-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Columna Izquierda: Información General */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 border-b pb-2 mb-3" style={{ borderColor: "var(--tfs-border-subtle)" }}>
+                <span className="text-xs font-mono font-bold text-[#FF5A00]">01.</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Detalles Generales</span>
+              </div>
 
-          {/* Nombre */}
-          <div className="space-y-2">
-            <FieldLabel required>Nombre</FieldLabel>
-            <Controller
-              name="nombre"
-              control={control}
-              rules={{ required: "El nombre es obligatorio" }}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  placeholder="Ej: Harina 000"
-                  className={inputClass}
+              {/* Nombre */}
+              <div className="space-y-2">
+                <FieldLabel required>Nombre del Ingrediente</FieldLabel>
+                <Controller
+                  name="nombre"
+                  control={control}
+                  rules={{ required: "El nombre es obligatorio" }}
+                  render={({ field }) => (
+                    <input {...field} placeholder="Ej: Muzzarella Barra" className={inputClass} style={inputStyle} />
+                  )}
                 />
-              )}
-            />
-            <FieldError message={errors.nombre?.message} />
-          </div>
+                <FieldError message={errors.nombre?.message} />
+              </div>
 
-          {/* Descripción */}
-          <div className="space-y-2">
-            <FieldLabel>Descripción</FieldLabel>
-            <Controller
-              name="descripcion"
-              control={control}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  placeholder="Descripción breve del insumo"
-                  className={inputClass}
+              {/* Descripción */}
+              <div className="space-y-2">
+                <FieldLabel>Descripción</FieldLabel>
+                <Controller
+                  name="descripcion"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      placeholder="Ej: Queso muzzarella de primera calidad para pizzas."
+                      rows={4}
+                      className={`${inputClass} h-auto resize-none`}
+                      style={inputStyle}
+                    />
+                  )}
                 />
-              )}
-            />
-          </div>
+              </div>
 
-          {/* Separador sutil */}
-          <div className="h-px bg-white/[0.05]" />
+              {/* Es alérgeno */}
+              <div
+                className="flex items-center gap-3 py-3.5 px-4 rounded-xl transition-all hover:bg-[var(--tfs-input-bg)]/80"
+                style={{ background: "var(--tfs-input-bg)", border: "1px solid var(--tfs-input-border)" }}
+              >
+                <Controller
+                  name="es_alergeno"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="checkbox"
+                      id="es_alergeno"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="w-4.5 h-4.5 rounded border-gray-300 text-[#FF5A00] focus:ring-[#FF5A00] cursor-pointer"
+                    />
+                  )}
+                />
+                <label htmlFor="es_alergeno" className="text-sm cursor-pointer select-none" style={{ color: "var(--tfs-text-primary)" }}>
+                  Es alérgeno
+                  <span className="block text-xs font-mono tracking-wider mt-0.5" style={{ color: "var(--tfs-text-muted)" }}>
+                    Contiene gluten, lácteos, huevo u otros alérgenos.
+                  </span>
+                </label>
+              </div>
+            </div>
 
-          {/* Categoría + Unidad */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <FieldLabel required>Categoría</FieldLabel>
-              <Controller
-                name="categoria"
-                control={control}
-                rules={{ required: "La categoría es obligatoria" }}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      {categorias.length === 0 ? (
-                        <div className="px-3 py-2 text-xs text-white/30 font-mono">Sin categorías creadas</div>
-                      ) : (
-                        categorias.map((cat) => (
-                          <SelectItem
-                            key={cat.id}
-                            value={cat.nombre}
-                            className="text-sm text-white/70 focus:text-white focus:bg-white/[0.06] rounded-lg"
+            {/* Columna Derecha: Control de Stock e Inventario */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 border-b pb-2 mb-3" style={{ borderColor: "var(--tfs-border-subtle)" }}>
+                <span className="text-xs font-mono font-bold text-[#FF5A00]">02.</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Inventario & Costos</span>
+              </div>
+
+              {/* Grid: Unidad de Medida y Peso */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Unidad de Medida */}
+                <div className="space-y-2">
+                  <FieldLabel required>Unidad de Medida</FieldLabel>
+                  <Controller
+                    name="unidad_medida_id"
+                    control={control}
+                    rules={{ required: "La unidad de medida es obligatoria" }}
+                    render={({ field }) => (
+                      <select
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        className={`${inputClass} cursor-pointer`}
+                        style={{
+                          ...inputStyle,
+                          color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
+                        }}
+                      >
+                        <option value="" disabled style={{ background: "var(--tfs-card-bg, #18181b)", color: "var(--tfs-text-muted, #a1a1aa)" }}>
+                          Seleccioná una unidad
+                        </option>
+                        {unidades.map((u) => (
+                          <option
+                            key={u.id}
+                            value={u.id}
+                            style={{
+                              background: "var(--tfs-card-bg, #18181b)",
+                              color: "var(--tfs-text-primary, #f4f4f5)",
+                            }}
                           >
-                            {cat.nombre}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.categoria?.message} />
-            </div>
+                            {u.nombre} ({u.simbolo}) — {u.tipo}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                  <FieldError message={errors.unidad_medida_id?.message} />
+                </div>
 
-            <div className="space-y-2">
-              <FieldLabel required>Unidad de medida</FieldLabel>
-              <Controller
-                name="unidadMedida"
-                control={control}
-                rules={{ required: "La unidad es obligatoria" }}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className={selectTriggerClass}>
-                      <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                    <SelectContent className={selectContentClass}>
-                      {UNIDADES_MEDIDA.map((u) => (
-                        <SelectItem
-                          key={u}
-                          value={u}
-                          className="text-sm text-white/70 focus:text-white focus:bg-white/[0.06] rounded-lg"
-                        >
-                          {u}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.unidadMedida?.message} />
-            </div>
-          </div>
+                {/* Peso */}
+                <div className="space-y-2">
+                  <FieldLabel>Peso ({simboloSeleccionado})</FieldLabel>
+                  <Controller
+                    name="peso"
+                    control={control}
+                    rules={{
+                      min: { value: 0, message: "El peso no puede ser negativo" },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        type="number"
+                        step="0.001"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
+                        placeholder="0.000"
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                    )}
+                  />
+                  <FieldError message={errors.peso?.message} />
+                </div>
+              </div>
 
-          {/* Stock + Precio — con fondo de sección */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.05] p-4 space-y-1">
-            <p className="text-[10px] font-mono tracking-[0.15em] text-white/25 uppercase mb-3">
-              Inventario & precio
-            </p>
-            <div className="grid grid-cols-3 gap-4">
+              {/* Costo Unitario */}
               <div className="space-y-2">
-                <FieldLabel required>Stock actual</FieldLabel>
+                <FieldLabel required>Costo Unitario ($)</FieldLabel>
                 <Controller
-                  name="stockActual"
+                  name="costo_unitario"
                   control={control}
-                  rules={{ min: { value: 0, message: "No puede ser negativo" } }}
+                  rules={{
+                    required: "El costo es obligatorio",
+                    min: { value: 0, message: "El costo no puede ser negativo" },
+                  }}
                   render={({ field }) => (
                     <input
                       type="number"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
                       className={inputClass}
+                      style={inputStyle}
                     />
                   )}
                 />
-                <FieldError message={errors.stockActual?.message} />
+                <FieldError message={errors.costo_unitario?.message} />
               </div>
 
-              <div className="space-y-2">
-                <FieldLabel required>Stock mínimo</FieldLabel>
-                <Controller
-                  name="stockMinimo"
-                  control={control}
-                  rules={{ min: { value: 0, message: "No puede ser negativo" } }}
-                  render={({ field }) => (
-                    <input
-                      type="number"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      className={inputClass}
-                    />
-                  )}
-                />
-                <FieldError message={errors.stockMinimo?.message} />
-              </div>
+              {/* Grid interno de Stocks */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Stock Actual */}
+                <div className="space-y-2">
+                  <FieldLabel required>Stock Actual</FieldLabel>
+                  <Controller
+                    name="stock_actual"
+                    control={control}
+                    rules={{
+                      required: "El stock es obligatorio",
+                      min: { value: 0, message: "No puede ser negativo" },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        type="number"
+                        step="0.001"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        placeholder="0.000"
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                    )}
+                  />
+                  <FieldError message={errors.stock_actual?.message} />
+                </div>
 
-              <div className="space-y-2">
-                <FieldLabel required>Precio unit.</FieldLabel>
-                <Controller
-                  name="precioUnitario"
-                  control={control}
-                  rules={{ min: { value: 0, message: "Debe ser ≥ 0" } }}
-                  render={({ field }) => (
-                    <input
-                      type="number"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      className={inputClass}
-                    />
-                  )}
-                />
-                <FieldError message={errors.precioUnitario?.message} />
+                {/* Stock Mínimo */}
+                <div className="space-y-2">
+                  <FieldLabel required>Stock Mínimo</FieldLabel>
+                  <Controller
+                    name="stock_minimo"
+                    control={control}
+                    rules={{
+                      required: "El stock mínimo es obligatorio",
+                      min: { value: 0, message: "No puede ser negativo" },
+                    }}
+                    render={({ field }) => (
+                      <input
+                        type="number"
+                        step="0.001"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        placeholder="0.000"
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                    )}
+                  />
+                  <FieldError message={errors.stock_minimo?.message} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Estado */}
-          <div className="space-y-2">
-            <FieldLabel>Estado</FieldLabel>
-            <Controller
-              name="estado"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className={`${selectTriggerClass} w-44`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className={selectContentClass}>
-                    <SelectItem value="Activo" className="text-sm text-white/70 focus:text-white focus:bg-white/[0.06] rounded-lg">
-                      <span className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                        Activo
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="Inactivo" className="text-sm text-white/70 focus:text-white focus:bg-white/[0.06] rounded-lg">
-                      <span className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white/30 inline-block" />
-                        Inactivo
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
+          {/* Error del servidor */}
+          {serverError && (
+            <div className="px-4 py-3 rounded-xl text-xs font-mono mt-5" style={{ background: "rgba(193,18,31,0.1)", border: "1px solid rgba(193,18,31,0.25)", color: "#e85d74" }}>
+              ⚠️ {serverError}
+            </div>
+          )}
 
           {/* Footer */}
-          <div className="border-t border-white/[0.06] pt-5 -mx-7 px-7 -mb-5 pb-7">
+          <div className="pt-5 -mx-7 px-7 -mb-5 pb-7 mt-6" style={{ borderTop: "1px solid var(--tfs-border-subtle)" }}>
             <DialogFooter className="gap-2 flex-row justify-end">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={onClose}
-                className="text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all rounded-xl h-10 px-4 text-sm"
+                disabled={saving}
+                className="hover:bg-[#F8F8F8]/[0.04] transition-all rounded-xl h-10 px-4 text-sm"
+                style={{ color: "var(--tfs-text-muted)" }}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                className="relative overflow-hidden bg-gradient-to-r from-[#FF5A00] to-[#e04e00] hover:from-[#ff6a1a] hover:to-[#FF5A00] text-white border-0 rounded-xl h-10 px-6 text-sm font-medium shadow-lg shadow-[#FF5A00]/20 hover:shadow-[#FF5A00]/30 transition-all duration-200"
+                disabled={saving}
+                className="relative overflow-hidden bg-gradient-to-r from-[#FF5A00] to-[#e04e00] hover:from-[#ff6a1a] hover:to-[#FF5A00] text-white border-0 rounded-xl h-10 px-6 text-sm font-medium shadow-lg shadow-[#FF5A00]/20 hover:shadow-[#FF5A00]/30 transition-all duration-200 disabled:opacity-50"
               >
-                {isEditing ? "Guardar cambios" : "Crear insumo"}
+                {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Crear ingrediente"}
               </Button>
             </DialogFooter>
           </div>

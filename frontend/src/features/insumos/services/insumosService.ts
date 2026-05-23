@@ -1,30 +1,82 @@
-import type { Insumo, InsumoFormData } from "../types/insumo.types";
-import { fetchApi } from "@/shared/api/apiClient";
+import type { Ingrediente, IngredienteFormData, UnidadMedida } from "../types/insumo.types";
+import { fetchApi, handleTokenExpired } from "@/shared/api/apiClient";
 
-export async function getInsumos(): Promise<Insumo[]> {
-  return fetchApi<Insumo[]>("/insumos");
+// Respuesta paginada del backend
+interface IngredienteListResponse {
+  items: Ingrediente[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 
-export async function getInsumoById(id: number): Promise<Insumo | undefined> {
+/** Obtiene todos los ingredientes con paginación y filtros opcionales. */
+export async function getInsumos(
+  skip: number = 0,
+  limit: number = 20,
+  search: string = "",
+  soloAlergenos: boolean = false,
+  mostrarInactivos: boolean = false
+): Promise<IngredienteListResponse> {
+  const params = new URLSearchParams({
+    skip: skip.toString(),
+    limit: limit.toString(),
+  });
+  if (search) params.append("nombre", search);
+  if (soloAlergenos) params.append("es_alergeno", "true");
+  if (mostrarInactivos) params.append("incluir_inactivos", "true");
+
+  return await fetchApi<IngredienteListResponse>(`/ingredientes?${params.toString()}`);
+}
+
+export async function getInsumoById(id: number): Promise<Ingrediente | undefined> {
   try {
-    return await fetchApi<Insumo>(`/insumos/${id}`);
+    return await fetchApi<Ingrediente>(`/ingredientes/${id}`);
   } catch {
     return undefined;
   }
 }
 
-export async function createInsumo(data: InsumoFormData): Promise<Insumo> {
-  return fetchApi<Insumo>("/insumos", {
+export async function getUnidadesMedida(): Promise<UnidadMedida[]> {
+  try {
+    return await fetchApi<UnidadMedida[]>("/unidades-medida/");
+  } catch {
+    return [];
+  }
+}
+
+export async function createInsumo(data: IngredienteFormData): Promise<Ingrediente> {
+  return fetchApi<Ingrediente>("/ingredientes", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      nombre: data.nombre,
+      descripcion: data.descripcion || null,
+      es_alergeno: data.es_alergeno,
+      unidad_medida_id: data.unidad_medida_id,
+      stock_actual: Number(data.stock_actual) || 0,
+      stock_minimo: Number(data.stock_minimo) || 0,
+      costo_unitario: Number(data.costo_unitario) || 0,
+      peso: data.peso !== null && data.peso !== undefined ? Number(data.peso) : null,
+    }),
   });
 }
 
-export async function updateInsumo(id: number, data: InsumoFormData): Promise<Insumo | null> {
+export async function updateInsumo(
+  id: number,
+  data: IngredienteFormData
+): Promise<Ingrediente | null> {
   try {
-    return await fetchApi<Insumo>(`/insumos/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
+    return await fetchApi<Ingrediente>(`/ingredientes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        nombre: data.nombre,
+        descripcion: data.descripcion || null,
+        es_alergeno: data.es_alergeno,
+        unidad_medida_id: data.unidad_medida_id,
+        stock_actual: Number(data.stock_actual) !== undefined ? Number(data.stock_actual) : undefined,
+        stock_minimo: Number(data.stock_minimo) !== undefined ? Number(data.stock_minimo) : undefined,
+        costo_unitario: Number(data.costo_unitario) !== undefined ? Number(data.costo_unitario) : undefined,
+        peso: data.peso !== null && data.peso !== undefined ? Number(data.peso) : null,
+      }),
     });
   } catch {
     return null;
@@ -35,33 +87,64 @@ export async function deleteInsumo(id: number): Promise<boolean> {
   return bajaLogicaInsumo(id);
 }
 
-/** Baja LÓGICA: cambia estado a "Inactivo" sin eliminar el registro. */
+/** Elimina un ingrediente del sistema. */
 export async function bajaLogicaInsumo(id: number): Promise<boolean> {
   try {
-    await fetchApi(`/insumos/${id}`, {
-      method: "DELETE",
-    });
+    await fetchApi(`/ingredientes/${id}`, { method: "DELETE" });
     return true;
   } catch {
     return false;
   }
 }
 
-/** Reactiva un insumo dado de baja lógica. */
-export async function reactivarInsumo(id: number): Promise<boolean> {
+/** Reactivar no aplica al modelo Ingrediente — stub para compatibilidad. */
+export async function reactivarInsumo(_id: number): Promise<boolean> {
+  return false;
+}
+
+export async function toggleActiveInsumo(id: number): Promise<Ingrediente | null> {
   try {
-    await fetchApi(`/insumos/${id}/reactivar`, {
+    return await fetchApi<Ingrediente>(`/ingredientes/${id}/toggle-active`, {
       method: "PATCH",
     });
-    return true;
   } catch {
-    return false;
+    return null;
   }
 }
 
-/**
- * Obtiene el resumen de estadísticas.
- */
-export async function getInsumosStats(): Promise<any> {
-  return fetchApi("/insumos/stats/resumen");
+export async function exportarIngredientes(
+  search: string = "",
+  soloAlergenos: boolean = false
+): Promise<void> {
+  const token = localStorage.getItem("the_food_store_token");
+  const headers: HeadersInit = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const params = new URLSearchParams();
+  if (search) params.append("nombre", search);
+  if (soloAlergenos) params.append("es_alergeno", "true");
+
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/ingredientes/exportar?${params.toString()}`, {
+    credentials: "include",
+    headers,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      handleTokenExpired();
+    }
+    throw new Error("Error al exportar ingredientes");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ingredientes.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
 }

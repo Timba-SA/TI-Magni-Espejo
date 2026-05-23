@@ -1,221 +1,60 @@
-import { useState, useMemo, useEffect } from "react";
-import { Plus, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InsumoStats } from "@/features/insumos/components/InsumoStats";
 import { InsumoFilters } from "@/features/insumos/components/InsumoFilters";
 import { InsumosTable } from "@/features/insumos/components/InsumosTable";
 import { InsumoForm } from "@/features/insumos/components/InsumoForm";
 import { InsumoDetailModal } from "@/features/insumos/components/InsumoDetailModal";
-import {
-  getInsumos,
-  createInsumo,
-  updateInsumo,
-  bajaLogicaInsumo,
-  reactivarInsumo,
-} from "@/features/insumos/services/insumosService";
-import { usePagination } from "@/hooks/usePagination";
-import { exportInsumosToExcel } from "@/utils/exportExcel";
+import { BackToDashboard } from "@/components/admin/BackToDashboard";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { getCurrentUser } from "@/features/auth/services/authService";
 import type {
-  Insumo,
-  InsumoFiltersState,
-  InsumoFormData,
+  Ingrediente,
+  IngredienteFormData,
+  IngredienteFiltersState,
 } from "@/features/insumos/types/insumo.types";
 
-const EMPTY_FILTERS: InsumoFiltersState = {
+const EMPTY_FILTERS: IngredienteFiltersState = {
   search: "",
-  categoria: "",
-  estado: "",
-  soloStockBajo: false,
+  soloAlergenos: false,
+  mostrarInactivos: false,
 };
 
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
-
-// ─── Componente de controles de paginación ────────────────────────────────────
-interface PaginationControlsProps {
-  page: number;
-  totalPages: number;
-  totalItems: number;
-  pageSize: number;
-  hasPrev: boolean;
-  hasNext: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-  onGoTo: (p: number) => void;
-  onPageSizeChange: (size: number) => void;
-}
-
-function PaginationControls({
-  page,
-  totalPages,
-  totalItems,
-  pageSize,
-  hasPrev,
-  hasNext,
-  onPrev,
-  onNext,
-  onGoTo,
-  onPageSizeChange,
-}: PaginationControlsProps) {
-  // Genera los números de página a mostrar (max 5 botones)
-  const pages = useMemo(() => {
-    const arr: (number | "...")[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) arr.push(i);
-    } else {
-      arr.push(1);
-      if (page > 3) arr.push("...");
-      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) arr.push(i);
-      if (page < totalPages - 2) arr.push("...");
-      arr.push(totalPages);
-    }
-    return arr;
-  }, [page, totalPages]);
-
-  return (
-    <div
-      className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
-      style={{ borderTop: "1px solid rgba(248,248,248,0.05)" }}
-    >
-      {/* Rows per page + total */}
-      <div className="flex items-center gap-3">
-        <span
-          className="text-[9px] tracking-[0.35em] uppercase"
-          style={{ color: "rgba(248,248,248,0.25)", fontFamily: "'Space Mono', monospace" }}
-        >
-          Filas
-        </span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="text-xs rounded px-2 py-1 outline-none"
-          style={{
-            background: "#111111",
-            border: "1px solid rgba(248,248,248,0.1)",
-            color: "rgba(248,248,248,0.6)",
-          }}
-        >
-          {PAGE_SIZE_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-        <span
-          className="text-[9px] tracking-wider"
-          style={{ color: "rgba(248,248,248,0.2)", fontFamily: "'Space Mono', monospace" }}
-        >
-          {totalItems} registros
-        </span>
-      </div>
-
-      {/* Page numbers */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onPrev}
-          disabled={!hasPrev}
-          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-25"
-          style={{ color: "rgba(248,248,248,0.5)" }}
-        >
-          <ChevronLeft size={14} />
-        </button>
-
-        {pages.map((p, i) =>
-          p === "..." ? (
-            <span
-              key={`dots-${i}`}
-              className="w-7 h-7 flex items-center justify-center text-xs"
-              style={{ color: "rgba(248,248,248,0.2)" }}
-            >
-              …
-            </span>
-          ) : (
-            <button
-              key={p}
-              onClick={() => onGoTo(p as number)}
-              className="w-7 h-7 flex items-center justify-center text-xs rounded transition-all"
-              style={{
-                background: p === page ? "rgba(255,90,0,0.15)" : "transparent",
-                color: p === page ? "#FF5A00" : "rgba(248,248,248,0.4)",
-                border: p === page ? "1px solid rgba(255,90,0,0.3)" : "1px solid transparent",
-                fontFamily: "'Space Mono', monospace",
-              }}
-            >
-              {p}
-            </button>
-          )
-        )}
-
-        <button
-          onClick={onNext}
-          disabled={!hasNext}
-          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-25"
-          style={{ color: "rgba(248,248,248,0.5)" }}
-        >
-          <ChevronRight size={14} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Modal de confirmación de baja lógica ─────────────────────────────────────
-interface ConfirmBajaModalProps {
-  insumo: Insumo;
+// ─── Modal de confirmación de eliminación ─────────────────────────────────────
+function ConfirmDeleteModal({
+  insumo,
+  onConfirm,
+  onCancel,
+}: {
+  insumo: Ingrediente;
   onConfirm: () => void;
   onCancel: () => void;
-}
-
-function ConfirmBajaModal({ insumo, onConfirm, onCancel }: ConfirmBajaModalProps) {
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
       <div
         className="max-w-sm w-full p-8 shadow-2xl"
-        style={{
-          background: "#111111",
-          border: "1px solid rgba(248,248,248,0.08)",
-        }}
+        style={{ background: "var(--tfs-card-bg)", border: "1px solid var(--tfs-border-mid)" }}
       >
-        {/* Top accent */}
         <div style={{ height: 2, background: "#C1121F", opacity: 0.7, marginBottom: "1.5rem" }} />
-
-        <p
-          className="text-[9px] tracking-[0.45em] uppercase mb-3"
-          style={{ color: "rgba(193,18,31,0.6)", fontFamily: "'Space Mono', monospace" }}
-        >
-          Baja lógica
+        <p className="text-[9px] tracking-[0.45em] uppercase mb-3" style={{ color: "rgba(193,18,31,0.6)", fontFamily: "'Space Mono', monospace" }}>
+          Eliminar ingrediente
         </p>
-
-        <h3 className="text-lg font-semibold mb-2" style={{ color: "#E8E8E8", letterSpacing: "-0.01em" }}>
-          ¿Dar de baja este insumo?
+        <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--tfs-text-heading)", letterSpacing: "-0.01em" }}>
+          ¿Eliminar este ingrediente?
         </h3>
-
-        <p className="text-sm mb-1" style={{ color: "rgba(248,248,248,0.45)" }}>
-          El insumo{" "}
-          <span className="font-semibold" style={{ color: "#E8E8E8" }}>
-            {insumo.nombre}
-          </span>{" "}
-          pasará a estado{" "}
-          <span className="font-semibold" style={{ color: "#FBBF24" }}>
-            Inactivo
-          </span>.
+        <p className="text-sm mb-6" style={{ color: "var(--tfs-text-muted)" }}>
+          Se inhabilitará{" "}
+          <span className="font-semibold" style={{ color: "var(--tfs-text-heading)" }}>{insumo.nombre}</span>{" "}
+          de la lista de activos.
         </p>
-        <p className="text-xs mb-6" style={{ color: "rgba(248,248,248,0.3)" }}>
-          El registro se conserva y puede reactivarse desde la tabla.
-        </p>
-
         <div className="flex gap-3">
-          <Button
-            variant="ghost"
-            className="flex-1"
-            style={{ color: "rgba(248,248,248,0.45)" }}
-            onClick={onCancel}
-          >
+          <Button variant="ghost" className="flex-1" style={{ color: "var(--tfs-text-muted)" }} onClick={onCancel}>
             Cancelar
           </Button>
-          <Button
-            className="flex-1 border-0 text-white"
-            style={{ background: "#C1121F" }}
-            onClick={onConfirm}
-          >
-            Dar de baja
+          <Button className="flex-1 border-0 text-white" style={{ background: "#C1121F" }} onClick={onConfirm}>
+            Eliminar
           </Button>
         </div>
       </div>
@@ -223,118 +62,113 @@ function ConfirmBajaModal({ insumo, onConfirm, onCancel }: ConfirmBajaModalProps
   );
 }
 
+// ─── Importar hooks de TanStack Query ──────────────────────────────────────────
+import {
+  useInsumosQuery,
+  useInsumoCreateMutation,
+  useInsumoUpdateMutation,
+  useInsumoDeleteMutation,
+  useInsumoToggleActiveMutation,
+} from "@/features/insumos/hooks/useInsumosQuery";
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 export function InsumosPage() {
-  const [insumos, setInsumos] = useState<Insumo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<InsumoFiltersState>(EMPTY_FILTERS);
+  const user = getCurrentUser();
+  const isAdmin = user?.rol === "ADMIN";
 
-  useEffect(() => {
-    refresh();
-  }, []);
+  const [skip, setSkip] = useState(0);
+  const [limit, setLimit] = useState(20);
+  const [exporting, setExporting] = useState(false);
+  const [filters, setFilters] = useState<IngredienteFiltersState>(EMPTY_FILTERS);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Modal states
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [bajaOpen, setBajaOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const [selectedInsumo, setSelectedInsumo] = useState<Insumo | null>(null);
-  const [insumoToBaja, setInsumoToBaja] = useState<Insumo | null>(null);
+  const [selectedInsumo, setSelectedInsumo] = useState<Ingrediente | null>(null);
+  const [insumoToDelete, setInsumoToDelete] = useState<Ingrediente | null>(null);
 
-  // ─── Filtrado ──────────────────────────────────────────────────────────────
-  const filteredInsumos = useMemo(() => {
-    return insumos.filter((insumo) => {
-      const matchSearch =
-        filters.search === "" ||
-        insumo.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
-        insumo.descripcion.toLowerCase().includes(filters.search.toLowerCase());
+  // 1. Usar useQuery de TanStack Query para el listado reactivo (Estado del Servidor)
+  const { data, isLoading } = useInsumosQuery(
+    skip,
+    limit,
+    filters.search,
+    filters.soloAlergenos,
+    filters.mostrarInactivos
+  );
 
-      const matchCategoria =
-        filters.categoria === "" || insumo.categoria === filters.categoria;
+  const insumos = data?.items || [];
+  const total = data?.total || 0;
+  const loading = isLoading;
 
-      const matchEstado =
-        filters.estado === "" || insumo.estado === filters.estado;
+  // 2. Instanciar Mutaciones con invalidación de caché reactiva
+  const createMutation = useInsumoCreateMutation();
+  const updateMutation = useInsumoUpdateMutation();
+  const deleteMutation = useInsumoDeleteMutation();
+  const toggleActiveMutation = useInsumoToggleActiveMutation();
 
-      const matchStockBajo =
-        !filters.soloStockBajo || insumo.stockActual <= insumo.stockMinimo;
+  // Reset pagination when filters change
+  useEffect(() => {
+    setSkip(0);
+  }, [filters.search, filters.soloAlergenos, filters.mostrarInactivos]);
 
-      return matchSearch && matchCategoria && matchEstado && matchStockBajo;
-    });
-  }, [insumos, filters]);
+  // ─── Filtrado ───────────────────────────────────────────────────────────────
+  const filteredInsumos = insumos;
 
-  // ─── Paginación ────────────────────────────────────────────────────────────
-  const pagination = usePagination(filteredInsumos, 10);
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+  const handleCreate = () => { setSaveError(null); setSelectedInsumo(null); setFormOpen(true); };
+  const handleEdit = (i: Ingrediente) => { setSaveError(null); setSelectedInsumo(i); setFormOpen(true); };
+  const handleView = (i: Ingrediente) => { setSelectedInsumo(i); setDetailOpen(true); };
+  const handleDeleteRequest = (i: Ingrediente) => { setInsumoToDelete(i); setDeleteOpen(true); };
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
-  const refresh = async () => {
-    setLoading(true);
+  const handleToggleActive = async (i: Ingrediente) => {
     try {
-      const data = await getInsumos();
-      setInsumos(data);
-    } catch (error) {
-      console.error("Error fetching insumos:", error);
-    } finally {
-      setLoading(false);
+      await toggleActiveMutation.mutateAsync(i.id);
+    } catch (err) {
+      console.error("Error toggle active:", err);
     }
   };
 
-  const handleCreate = () => {
-    setSelectedInsumo(null);
-    setFormOpen(true);
-  };
-
-  const handleEdit = (insumo: Insumo) => {
-    setSelectedInsumo(insumo);
-    setFormOpen(true);
-  };
-
-  const handleView = (insumo: Insumo) => {
-    setSelectedInsumo(insumo);
-    setDetailOpen(true);
-  };
-
-  const handleBajaRequest = (insumo: Insumo) => {
-    setInsumoToBaja(insumo);
-    setBajaOpen(true);
-  };
-
-  const handleConfirmBaja = async () => {
-    if (insumoToBaja) {
-      await bajaLogicaInsumo(insumoToBaja.id);
-      await refresh();
-      setInsumoToBaja(null);
-      setBajaOpen(false);
+  const handleConfirmDelete = async () => {
+    if (insumoToDelete) {
+      try {
+        await deleteMutation.mutateAsync(insumoToDelete.id);
+        setInsumoToDelete(null);
+        setDeleteOpen(false);
+      } catch (err) {
+        console.error("Error deleting:", err);
+      }
     }
   };
 
-  const handleReactivar = async (insumo: Insumo) => {
-    await reactivarInsumo(insumo.id);
-    await refresh();
-  };
-
-  const handleSave = async (data: InsumoFormData) => {
-    if (selectedInsumo) {
-      await updateInsumo(selectedInsumo.id, data);
-    } else {
-      await createInsumo(data);
+  const handleSave = async (data: IngredienteFormData) => {
+    setSaveError(null);
+    try {
+      if (selectedInsumo) {
+        await updateMutation.mutateAsync({ id: selectedInsumo.id, data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+      setFormOpen(false);
+      setSelectedInsumo(null);
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || "Error al guardar el ingrediente";
+      setSaveError(msg);
+      console.error("handleSave error:", err);
     }
-    await refresh();
-    setFormOpen(false);
-    setSelectedInsumo(null);
-  };
-
-  const handleExport = () => {
-    exportInsumosToExcel(filteredInsumos);
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* ── Page header ─────────────────────────────────────────────── */}
+    <div className="p-6 md:p-8 space-y-6 max-w-6xl mx-auto">
+      <BackToDashboard />
+
+      {/* ── Page header ────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <p
             className="text-[9px] tracking-[0.45em] uppercase mb-1"
-            style={{ color: "rgba(248,248,248,0.25)", fontFamily: "'Space Mono', monospace" }}
+            style={{ color: "var(--tfs-text-muted)", fontFamily: "'Space Mono', monospace" }}
           >
             Gestión de inventario
           </p>
@@ -344,68 +178,46 @@ export function InsumosPage() {
               fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
               fontWeight: 300,
               letterSpacing: "-0.02em",
-              color: "#E8E8E8",
+              color: "var(--tfs-text-heading)",
             }}
           >
-            Insumos
+            Ingredientes
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Exportar Excel */}
-          <Button
-            variant="ghost"
-            onClick={handleExport}
-            className="gap-2 text-xs h-9"
-            style={{ color: "rgba(248,248,248,0.45)", border: "1px solid rgba(248,248,248,0.1)" }}
-            title={`Exportar ${filteredInsumos.length} registros a Excel`}
-          >
-            <Download size={14} />
-            <span className="hidden sm:inline">Excel</span>
-          </Button>
-
-          {/* Nuevo insumo */}
+        {isAdmin && (
           <Button
             onClick={handleCreate}
-            className="gap-2 text-sm h-9 border-0 text-white"
+            className="gap-2 text-sm h-9 border-0 text-white flex-shrink-0"
             style={{ background: "#FF5A00" }}
           >
             <Plus size={15} />
             Nuevo
           </Button>
-        </div>
+        )}
       </div>
 
-      {/* ── Stats ───────────────────────────────────────────────────── */}
+      {/* ── Stats ──────────────────────────────────────────────────── */}
       <InsumoStats insumos={insumos} />
 
-      {/* ── Filters ─────────────────────────────────────────────────── */}
+      {/* ── Filters ────────────────────────────────────────────────── */}
       <div
         className="p-4"
-        style={{
-          background: "#0F0F0F",
-          border: "1px solid rgba(248,248,248,0.05)",
-        }}
+        style={{ background: "var(--tfs-card-bg)", border: "1px solid var(--tfs-border-subtle)" }}
       >
         <InsumoFilters filters={filters} onChange={setFilters} />
       </div>
 
-      {/* ── Table container ─────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#0F0F0F",
-          border: "1px solid rgba(248,248,248,0.05)",
-        }}
-      >
-        {/* Table header bar */}
+      {/* ── Table container ────────────────────────────────────────── */}
+      <div style={{ background: "var(--tfs-card-bg)", border: "1px solid var(--tfs-border-subtle)" }}>
         <div
           className="flex items-center justify-between px-4 py-3"
-          style={{ borderBottom: "1px solid rgba(248,248,248,0.04)" }}
+          style={{ borderBottom: "1px solid var(--tfs-divider)" }}
         >
           <div className="flex items-center gap-3">
             <span
               className="text-[9px] tracking-[0.45em] uppercase"
-              style={{ color: "rgba(248,248,248,0.25)", fontFamily: "'Space Mono', monospace" }}
+              style={{ color: "var(--tfs-text-muted)", fontFamily: "'Space Mono', monospace" }}
             >
               Resultados
             </span>
@@ -417,55 +229,73 @@ export function InsumosPage() {
                 border: "1px solid rgba(255,90,0,0.2)",
               }}
             >
-              {filteredInsumos.length}
+              {total}
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Info de paginación */}
-            <span
-              className="text-[9px] tracking-wider"
-              style={{ color: "rgba(248,248,248,0.2)", fontFamily: "'Space Mono', monospace" }}
-            >
-              Pág. {pagination.page} / {pagination.totalPages}
-            </span>
-          </div>
+          <button
+            onClick={async () => {
+              try {
+                setExporting(true);
+                const { exportarIngredientes } = await import("@/features/insumos/services/insumosService");
+                await exportarIngredientes(filters.search, filters.soloAlergenos);
+              } catch (err) {
+                console.error("Error exporting", err);
+              } finally {
+                setExporting(false);
+              }
+            }}
+            disabled={exporting}
+            className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded transition-all duration-200 border disabled:opacity-50"
+            style={{ 
+              background: "var(--tfs-card-bg)", 
+              color: "var(--tfs-text-heading)", 
+              borderColor: "var(--tfs-border-subtle)" 
+            }}
+            onMouseEnter={(e) => { if (!exporting) e.currentTarget.style.borderColor = "#FF5A00"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--tfs-border-subtle)"; }}
+          >
+            <Download size={14} />
+            {exporting ? "Exportando..." : "Exportar a Excel"}
+          </button>
         </div>
 
-        {/* Table */}
-        <InsumosTable
-          insumos={pagination.items}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleBajaRequest}
-          onReactivar={handleReactivar}
-        />
-
-        {/* Pagination controls */}
         {loading ? (
-          <div className="p-8 text-center text-white/50 font-mono text-xs">Cargando datos del servidor...</div>
-        ) : pagination.totalPages > 1 || filteredInsumos.length > 5 ? (
-          <PaginationControls
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            totalItems={filteredInsumos.length}
-            pageSize={pagination.pageSize}
-            hasPrev={pagination.hasPrev}
-            hasNext={pagination.hasNext}
-            onPrev={pagination.prev}
-            onNext={pagination.next}
-            onGoTo={pagination.goTo}
-            onPageSizeChange={pagination.setPageSize}
-          />
-        ) : null}
+          <div className="p-8 text-center text-white/50 font-mono text-xs">
+            Cargando ingredientes...
+          </div>
+        ) : (
+          <>
+            <InsumosTable
+              insumos={filteredInsumos}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDeleteRequest}
+              onToggleActive={handleToggleActive}
+              isAdmin={isAdmin}
+            />
+            <div className="p-4" style={{ borderTop: "1px solid var(--tfs-divider)" }}>
+              <DataTablePagination
+                skip={skip}
+                limit={limit}
+                total={total}
+                onPageChange={setSkip}
+                onLimitChange={(newLimit) => {
+                  setLimit(newLimit);
+                  setSkip(0);
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
 
-      {/* ── Modals ──────────────────────────────────────────────────── */}
+      {/* ── Modals ─────────────────────────────────────────────────── */}
       <InsumoForm
         open={formOpen}
         insumo={selectedInsumo}
-        onClose={() => { setFormOpen(false); setSelectedInsumo(null); }}
+        onClose={() => { setFormOpen(false); setSelectedInsumo(null); setSaveError(null); }}
         onSave={handleSave}
+        serverError={saveError}
       />
 
       <InsumoDetailModal
@@ -474,14 +304,13 @@ export function InsumosPage() {
         onClose={() => { setDetailOpen(false); setSelectedInsumo(null); }}
       />
 
-      {bajaOpen && insumoToBaja && (
-        <ConfirmBajaModal
-          insumo={insumoToBaja}
-          onConfirm={handleConfirmBaja}
-          onCancel={() => { setBajaOpen(false); setInsumoToBaja(null); }}
+      {deleteOpen && insumoToDelete && (
+        <ConfirmDeleteModal
+          insumo={insumoToDelete}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => { setDeleteOpen(false); setInsumoToDelete(null); }}
         />
       )}
     </div>
   );
 }
-
