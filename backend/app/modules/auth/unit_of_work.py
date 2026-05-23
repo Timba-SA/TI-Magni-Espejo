@@ -1,11 +1,10 @@
-# TODO: Implementar UnitOfWork de auth
-#
-# Extiende el UnitOfWork base para exponer los repositorios
-# del módulo de autenticación como propiedades lazy-initialized.
-#
-# Repositorios a exponer:
-# - roles: RolRepository
-# - usuario_roles: UsuarioRolRepository
-# - refresh_tokens: RefreshTokenRepository
-#
-# Patrón: igual a productos/unit_of_work.py
+from sqlmodel import Session
+
+from app.core.unit_of_work import UnitOfWork
+from app.modules.auth.repository import AuthRepository
+
+
+class AuthUoW(UnitOfWork):
+    def __init__(self, session: Session):
+        super().__init__(session)
+        self.auth = AuthRepository(session)

@@ -1,17 +1,28 @@
-# TODO: Implementar schemas Pydantic de auth
-#
-# Schemas requeridos:
-#
-# --- Request ---
-# - RegisterRequest: nombre, apellido, email, celular?, password
-# - LoginRequest: email, password
-# - RefreshRequest: refresh_token
-#
-# --- Response ---
-# - TokenResponse: access_token, refresh_token, token_type="bearer"
-# - RolResponse: codigo, nombre, descripcion
-# - UsuarioRolResponse: usuario_id, rol_codigo, expires_at?
-#
-# Validaciones:
-# - email: EmailStr (Pydantic v2)
-# - password: min 8 chars (validar en schema, hashear en service)
+from typing import Optional
+from pydantic import BaseModel, EmailStr
+
+
+class RegisterRequest(BaseModel):
+    nombre: str
+    apellido: Optional[str] = ""
+    email: EmailStr
+    password: str
+
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+from typing import Any
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: dict[str, Any]
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
