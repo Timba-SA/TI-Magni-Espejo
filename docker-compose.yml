@@ -26,12 +26,13 @@ services:
       dockerfile: Dockerfile
     container_name: food_store_backend
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     environment:
-      APP_NAME: "The Food Store API"
-      APP_VERSION: "1.0.0"
-      ENVIRONMENT: "development"
+      # Sobrescribimos el host de la DB para que el backend busque a 'db' en la red de docker
+      # en lugar de 'localhost' (que apuntaría al propio contenedor del backend)
+      DB_HOST: "db"
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/food_store"
-      FRONTEND_ORIGIN: "http://localhost:5173"
     ports:
       - "8000:8000"
     depends_on:

@@ -15,4 +15,4 @@ EXPOSE 8000
 
 # Auto-seed on startup and then run uvicorn
 # The seed script already checks if data exists before inserting
-CMD python scripts/seed_db.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+CMD python -m app.db.seed && uvicorn main:app --host 0.0.0.0 --port 8000 --reload

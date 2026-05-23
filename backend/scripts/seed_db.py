@@ -41,7 +41,6 @@ def seed_database():
                 print("Poblando la base de datos con insumos iniciales...")
                 for data in SEED_DATA_INSUMOS:
                     uow.insumos.create(data)
-                uow.commit()
                 print(f"¡Éxito! Se han creado {len(SEED_DATA_INSUMOS)} insumos.")
             else:
                 print(f"La base de datos ya contiene {count_insumos} insumos. Saltando el seed de insumos.")
@@ -54,7 +53,6 @@ def seed_database():
                     user_data = data.copy()
                     user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
                     uow.users.create(user_data)
-                uow.commit()
                 print(f"¡Éxito! Se han creado {len(SEED_DATA_USERS)} usuarios.")
             else:
                 print("La base de datos ya contiene usuarios iniciales. Saltando el seed de usuarios.")
