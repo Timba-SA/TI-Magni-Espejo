@@ -27,21 +27,21 @@ export function DashboardCard({
       onClick={onClick}
       className="relative overflow-hidden group transition-all duration-300"
       style={{
-        background: "#0F0F0F",
-        border: `1px solid rgba(248,248,248,0.05)`,
+        background: "var(--tfs-card-bg)",
+        border: `1px solid var(--tfs-border-subtle)`,
         cursor: onClick ? "pointer" : "default",
       }}
       onMouseEnter={(e) => {
         if (!onClick) return;
         const el = e.currentTarget as HTMLDivElement;
         el.style.borderColor = a.border;
-        el.style.background = "#111111";
+        el.style.background = "var(--tfs-card-hover)";
       }}
       onMouseLeave={(e) => {
         if (!onClick) return;
         const el = e.currentTarget as HTMLDivElement;
-        el.style.borderColor = "rgba(248,248,248,0.05)";
-        el.style.background = "#0F0F0F";
+        el.style.borderColor = "var(--tfs-border-subtle)";
+        el.style.background = "var(--tfs-card-bg)";
       }}
     >
       {/* Top accent line */}
@@ -53,7 +53,7 @@ export function DashboardCard({
         <div className="flex items-start justify-between mb-4">
           <p
             className="text-[8px] tracking-[0.5em] uppercase"
-            style={{ color: "rgba(248,248,248,0.3)", fontFamily: "'Space Mono', monospace" }}
+            style={{ color: "var(--tfs-text-muted)", fontFamily: "'Space Mono', monospace" }}
           >
             {title}
           </p>
@@ -72,7 +72,7 @@ export function DashboardCard({
             fontSize: value.toString().length > 10 ? "clamp(1.25rem, 2vw, 1.75rem)" : "clamp(1.75rem, 3vw, 2.5rem)",
             fontWeight: 300,
             letterSpacing: "-0.03em",
-            color: "#E8E8E8",
+            color: "var(--tfs-text-heading)",
           }}
           title={value.toString()}
         >
@@ -83,7 +83,7 @@ export function DashboardCard({
         {subtitle && (
           <p
             className="text-[10px] tracking-[0.1em]"
-            style={{ color: "rgba(248,248,248,0.3)" }}
+            style={{ color: "var(--tfs-text-muted)" }}
           >
             {subtitle}
           </p>

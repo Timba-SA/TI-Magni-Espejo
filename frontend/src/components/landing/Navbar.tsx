@@ -1,41 +1,17 @@
-import { motion, useMotionValue, useSpring, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "motion/react";
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router";
-import { LogIn } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { ShoppingBag, User, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/features/carrito/hooks/useCart";
+import { CartDrawer } from "@/features/carrito/components/CartDrawer";
 
-// ─── Historical ticker ──────────────────────────────────────────────────────
-const TICKER_TEXT =
-  "ARCHIVUM GASTRONOMICUM ✦ THE FOOD STORE ✦ FOLIO I ✦ FUEGO ✦ SAL ✦ PAN ✦ VINO ✦ OFICIO ✦ SABOR ✦ ";
-
-function Ticker() {
-  return (
-    <div className="fixed top-0 left-0 right-0 z-[200] h-7 overflow-hidden flex items-center" style={{ background: "#8B1E16" }}>
-      <motion.div
-        className="flex gap-0 whitespace-nowrap"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 38, repeat: Infinity, ease: "linear" }}
-      >
-        {[...Array(4)].map((_, i) => (
-          <span
-            key={i}
-            className="text-[10px] tracking-[0.45em] uppercase px-3"
-            style={{ color: "#E8D8B8", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}
-          >
-            {TICKER_TEXT}
-          </span>
-        ))}
-      </motion.div>
-    </div>
-  );
-}
-
-// ─── Orbital menu button ─────────────────────────────────────────────────────
+// ─── Orbital menu button ──────────────────────────────────────────────────────
 function OrbitalButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="relative w-14 h-14 flex items-center justify-center group"
+      className="relative w-16 h-16 flex items-center justify-center group"
       aria-label="Toggle menu"
     >
       {/* Rotating ring text */}
@@ -56,7 +32,7 @@ function OrbitalButton({ open, onClick }: { open: boolean; onClick: () => void }
       </motion.svg>
 
       {/* Inner cross / close */}
-      <div className="relative z-10 w-5 h-5">
+      <div className="relative z-10 w-6 h-6">
         <motion.span
           className="absolute top-1/2 left-0 right-0 h-[1px] bg-white origin-center"
           animate={{ rotate: open ? 45 : 0, y: open ? 0 : -4 }}
@@ -77,7 +53,7 @@ function OrbitalButton({ open, onClick }: { open: boolean; onClick: () => void }
   );
 }
 
-// ─── Magnetic link ───────────────────────────────────────────────────────────
+// ─── Magnetic link ────────────────────────────────────────────────────────────
 const NAV_LABELS: Record<string, string> = {
   Menu: "Menú",
   About: "Nosotros",
@@ -209,12 +185,12 @@ function MagneticLink({
   );
 }
 
-// ─── Full-screen overlay menu ────────────────────────────────────────────────
+// ─── Full-screen overlay menu ─────────────────────────────────────────────────
 const NAV_ITEMS = ["Menu", "About", "Experience", "Reservations", "Contact"];
 
-function FullScreenMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function FullScreenMenu({ open, onClose, onLogout }: { open: boolean; onClose: () => void; onLogout: () => void }) {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const activeBg = hoveredItem ? PANEL_COLORS[hoveredItem] : "#0B0B0B";
 
@@ -272,8 +248,8 @@ function FullScreenMenu({ open, onClose }: { open: boolean; onClose: () => void 
                 </p>
                 <p className="text-sm text-white/60 font-mono">Buenos Aires, BSAS</p>
                 {isAuthenticated && (
-                  <button 
-                    onClick={() => { logout(); onClose(); }}
+                  <button
+                    onClick={onLogout}
                     className="text-[10px] tracking-[0.2em] text-red-400/80 hover:text-red-300 uppercase font-mono mt-4 transition-colors"
                   >
                     [ Cerrar sesión ]
@@ -313,83 +289,227 @@ function FullScreenMenu({ open, onClose }: { open: boolean; onClose: () => void 
   );
 }
 
+// ─── Botón de ícono de la navbar ──────────────────────────────────────────────
+function NavIconButton({
+  children,
+  onClick,
+  href,
+  title,
+  accentColor = "rgba(255,90,0,0.7)",
+  borderColor = "rgba(255,90,0,0.25)",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  href?: string;
+  title: string;
+  accentColor?: string;
+  borderColor?: string;
+}) {
+  const base: React.CSSProperties = {
+    width: 38,
+    height: 38,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: `1px solid ${borderColor}`,
+    background: "rgba(8,8,8,0.5)",
+    backdropFilter: "blur(8px)",
+    borderRadius: "4px",
+    color: accentColor,
+    transition: "all 0.2s",
+    cursor: "pointer",
+    position: "relative",
+  };
+
+  const handleEnter = (e: React.MouseEvent<HTMLElement>) => {
+    (e.currentTarget as HTMLElement).style.borderColor = accentColor;
+    (e.currentTarget as HTMLElement).style.background  = "rgba(255,90,0,0.08)";
+  };
+  const handleLeave = (e: React.MouseEvent<HTMLElement>) => {
+    (e.currentTarget as HTMLElement).style.borderColor = borderColor;
+    (e.currentTarget as HTMLElement).style.background  = "rgba(8,8,8,0.5)";
+  };
+
+  if (href) {
+    return (
+      <Link
+        to={href}
+        title={title}
+        style={base}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={base}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
+      {children}
+    </button>
+  );
+}
+
 // ─── Main Navbar export ───────────────────────────────────────────────────────
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
 
-  // Lock scroll when open
+  const { isAuthenticated, user, logout } = useAuth();
+  const { totalItems, setIsOpen: setCartOpen } = useCart();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate("/");
+  };
+
+  // Lógica de scroll: esconde al bajar, reaparece con fondo al subir
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const scrollingDown = y > lastScrollY.current;
+
+      setScrolled(y > 60);
+
+      if (scrollingDown && y > 120 && !open) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+
+      lastScrollY.current = y;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [open]);
+
+  // Lock scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  // Destino del botón de perfil según estado de autenticación
+  const profileHref = !isAuthenticated
+    ? "/login"
+    : user?.rol === "CLIENT"
+    ? "/perfil"
+    : "/home";
+
+  const profileTitle = !isAuthenticated
+    ? "Iniciar sesión"
+    : user?.rol === "CLIENT"
+    ? "Mi perfil"
+    : "Panel de administración";
+
+  const isStaff = isAuthenticated && user?.rol !== "CLIENT";
+
   return (
     <>
-      <Ticker />
-
-      {/* Corner: Logo */}
-      <motion.a
-        href="/"
-        className="fixed top-7 left-8 z-[200] flex items-center gap-2.5 group"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
+      {/* ── Barra de navbar unificada ─────────────────────────────────────── */}
+      <motion.nav
+        className="fixed inset-x-0 top-0 z-[200] flex items-center justify-between px-8"
+        style={{ height: "72px", borderBottomWidth: "1px", borderBottomStyle: "solid" }}
+        animate={{
+          y: hidden ? "-100%" : "0%",
+          opacity: 1,
+          backgroundColor: scrolled ? "rgba(8,8,8,0.92)" : "rgba(8,8,8,0)",
+          borderBottomColor: scrolled ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0)",
+          backdropFilter: scrolled ? "blur(14px)" : "blur(0px)",
+        }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        initial={{ opacity: 0, y: 0 }}
       >
-        <div className="relative w-8 h-8 border border-[#FF5A00]/60 flex items-center justify-center group-hover:border-[#FF5A00] transition-colors duration-300">
-          <span className="text-[10px] font-bold text-[#FF5A00] font-mono tracking-wider">TFS</span>
-          <motion.div
-            className="absolute inset-0 bg-[#FF5A00]"
-            initial={{ scaleX: 0 }}
-            whileHover={{ scaleX: 1 }}
-            transition={{ duration: 0.3 }}
-            style={{ transformOrigin: "left", zIndex: -1 }}
-          />
-        </div>
-        <span
-          className="text-[10px] text-white/40 tracking-[0.3em] uppercase font-mono hidden md:block group-hover:text-white/70 transition-colors duration-300"
+        {/* Fix para el border que motion no acepta en animate */}
+        <motion.div
+          className="absolute inset-x-0 bottom-0 h-px"
+          animate={{ opacity: scrolled ? 1 : 0, backgroundColor: "rgba(255,255,255,0.05)" }}
+          transition={{ duration: 0.3 }}
+        />
+
+        {/* Logo */}
+        <motion.a
+          href="/"
+          className="flex items-center gap-2.5 group"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          The Food Store
-        </span>
-      </motion.a>
-
-      {/* Corner: Menu button */}
-      <motion.div
-        className="fixed top-7 right-8 z-[200]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <OrbitalButton open={open} onClick={() => setOpen(!open)} />
-      </motion.div>
-
-      {/* Panel login button — histórico */}
-      <motion.div
-        className="fixed top-[38px] right-28 z-[200]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
-      >
-        <Link
-          to="/login"
-          className="group flex items-center gap-2 px-4 py-1.5 transition-all duration-300"
-          style={{
-            border: "1px solid rgba(198,154,58,0.35)",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(198,154,58,0.8)")}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(198,154,58,0.35)")}
-        >
-          <LogIn size={11} style={{ color: "rgba(198,154,58,0.8)" }} />
-          <span
-            className="text-[10px] tracking-[0.35em] uppercase transition-colors"
-            style={{ color: "rgba(198,154,58,0.6)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}
-          >
-            Panel
+          <div className="relative w-8 h-8 border border-[#FF5A00]/60 flex items-center justify-center group-hover:border-[#FF5A00] transition-colors duration-300">
+            <span className="text-[10px] font-bold text-[#FF5A00] font-mono tracking-wider">TFS</span>
+            <motion.div
+              className="absolute inset-0 bg-[#FF5A00]"
+              initial={{ scaleX: 0 }}
+              whileHover={{ scaleX: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{ transformOrigin: "left", zIndex: -1 }}
+            />
+          </div>
+          <span className="text-sm text-white/40 tracking-[0.3em] uppercase font-mono hidden md:block group-hover:text-white/70 transition-colors duration-300">
+            The Food Store
           </span>
-        </Link>
-      </motion.div>
+        </motion.a>
+
+        {/* ── Botones de acción — derecha ─────────────────────────────────── */}
+        <div className="flex items-center gap-2">
+
+          {/* Carrito + Perfil — desaparecen cuando el menú está abierto */}
+          <div
+            className={`flex items-center gap-2 transition-all duration-300 ${
+              open
+                ? "opacity-0 pointer-events-none translate-x-4 invisible"
+                : "opacity-100 translate-x-0"
+            }`}
+          >
+            {/* Carrito */}
+            <NavIconButton
+              onClick={() => setCartOpen(true)}
+              title={totalItems > 0 ? `Carrito (${totalItems} item${totalItems > 1 ? "s" : ""})` : "Carrito"}
+            >
+              <ShoppingBag size={15} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 bg-orange-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border border-[#080808]">
+                  {totalItems}
+                </span>
+              )}
+            </NavIconButton>
+
+            {/* Perfil / Login / Panel */}
+            <NavIconButton
+              href={profileHref}
+              title={profileTitle}
+              accentColor={isStaff ? "rgba(255,90,0,0.85)" : "rgba(198,154,58,0.8)"}
+              borderColor={isStaff ? "rgba(255,90,0,0.25)" : "rgba(198,154,58,0.25)"}
+            >
+              {isStaff ? <LayoutDashboard size={15} /> : <User size={15} />}
+              {isStaff && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#FF5A00] animate-pulse border border-[#080808]" />
+              )}
+            </NavIconButton>
+          </div>
+
+          {/* Menú orbital — siempre visible */}
+          <OrbitalButton open={open} onClick={() => setOpen(!open)} />
+        </div>
+      </motion.nav>
 
       {/* Full screen overlay */}
-      <FullScreenMenu open={open} onClose={() => setOpen(false)} />
+      <FullScreenMenu open={open} onClose={() => setOpen(false)} onLogout={handleLogout} />
+
+      {/* Drawer lateral de Carrito */}
+      <CartDrawer />
     </>
   );
 }

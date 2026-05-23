@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "react-router";
-import { LayoutDashboard, Package, LogOut, ChefHat, X, ArrowLeft, Tag, Users } from "lucide-react";
+import { LayoutDashboard, Package, LogOut, ChefHat, X, ArrowLeft, Tag, Users, ClipboardList, User } from "lucide-react";
 import type { AuthUser } from "@/features/auth/types/auth.types";
-import { logout, getCurrentUser } from "@/features/auth/services/authService";
+import { getCurrentUser } from "@/features/auth/services/authService";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdminSidebarProps {
   user: AuthUser;
@@ -10,15 +11,19 @@ interface AdminSidebarProps {
 }
 
 const ALL_NAV_ITEMS = [
-  { to: "/home",       label: "Dashboard",  icon: LayoutDashboard, code: "01", roles: ["Admin", "Encargado"] },
-  { to: "/insumos",    label: "Insumos",    icon: Package,         code: "02", roles: ["Admin", "Encargado"] },
-  { to: "/categorias", label: "Categorías", icon: Tag,             code: "03", roles: ["Admin", "Encargado"] },
-  { to: "/usuarios",   label: "Usuarios",   icon: Users,           code: "04", roles: ["Admin"] },
+  { to: "/home",         label: "Dashboard",  icon: LayoutDashboard, code: "01", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/insumos",      label: "Insumos",    icon: Package,         code: "02", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/categorias",   label: "Categorías", icon: Tag,             code: "03", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/productos",    label: "Productos",  icon: ChefHat,         code: "05", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/usuarios",     label: "Usuarios",   icon: Users,           code: "04", roles: ["ADMIN"] },
+  { to: "/pedidos",      label: "Pedidos",    icon: ClipboardList,   code: "06", roles: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO"] },
+  { to: "/perfil-admin", label: "Mi Perfil",  icon: User,            code: "07", roles: ["ADMIN", "ENCARGADO"] },
 ];
 
 
 export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const currentUser = getCurrentUser();
   const NAV_ITEMS = ALL_NAV_ITEMS.filter(
     (item) => !currentUser || item.roles.includes(currentUser.rol)
@@ -26,7 +31,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -45,14 +50,14 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{
-          background: "linear-gradient(180deg, #0F0F0F 0%, #0B0B0B 100%)",
-          borderRight: "1px solid rgba(248,248,248,0.05)",
+          background: "var(--tfs-sidebar-bg)",
+          borderRight: "1px solid var(--tfs-border-subtle)",
         }}
       >
         {/* ── Brand ─────────────────────────────────────────────────── */}
         <div
           className="flex items-center justify-between px-5 py-5"
-          style={{ borderBottom: "1px solid rgba(248,248,248,0.04)" }}
+          style={{ borderBottom: "1px solid var(--tfs-border-subtle)" }}
         >
           <div className="flex items-center gap-3">
             {/* Monogram box */}
@@ -65,13 +70,13 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
             <div>
               <p
                 className="text-[10px] font-bold tracking-[0.3em] uppercase leading-none"
-                style={{ color: "#E8E8E8" }}
+                style={{ color: "var(--tfs-text-primary)" }}
               >
                 The Food Store
               </p>
               <p
                 className="text-[9px] mt-0.5 tracking-widest uppercase"
-                style={{ color: "rgba(248,248,248,0.28)", fontFamily: "'Space Mono', monospace" }}
+                style={{ color: "var(--tfs-text-muted)", fontFamily: "'Space Mono', monospace" }}
               >
                 Gestión
               </p>
@@ -79,7 +84,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
           </div>
           <button
             className="md:hidden transition-colors"
-            style={{ color: "rgba(248,248,248,0.3)" }}
+            style={{ color: "var(--tfs-text-muted)" }}
             onClick={onClose}
           >
             <X size={16} />
@@ -109,7 +114,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
             <div className="min-w-0">
               <p
                 className="text-xs font-semibold truncate"
-                style={{ color: "#E8E8E8" }}
+                style={{ color: "var(--tfs-text-primary)" }}
               >
                 {user.nombre}
               </p>
@@ -126,7 +131,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
         {/* ── Section label ─────────────────────────────────────────── */}
         <p
           className="px-5 pb-2 text-[8px] tracking-[0.5em] uppercase"
-          style={{ color: "rgba(248,248,248,0.2)", fontFamily: "'Space Mono', monospace" }}
+          style={{ color: "var(--tfs-text-subtle)", fontFamily: "'Space Mono', monospace" }}
         >
           Módulos
         </p>
@@ -144,7 +149,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
                 }`
               }
               style={({ isActive }) => ({
-                color: isActive ? "#FF5A00" : "rgba(248,248,248,0.45)",
+                color: isActive ? "#FF5A00" : "var(--tfs-text-muted)",
                 background: isActive ? "rgba(255,90,0,0.08)" : "transparent",
                 borderLeft: isActive
                   ? "2px solid #FF5A00"
@@ -156,7 +161,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
               <span className="flex-1">{label}</span>
               <span
                 className="text-[8px] tracking-widest font-mono"
-                style={{ color: "rgba(248,248,248,0.15)" }}
+                style={{ color: "var(--tfs-text-subtle)" }}
               >
                 {code}
               </span>
@@ -167,19 +172,19 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
         {/* ── Footer / Logout ───────────────────────────────────────── */}
         <div
           className="p-3 space-y-0.5"
-          style={{ borderTop: "1px solid rgba(248,248,248,0.04)" }}
+          style={{ borderTop: "1px solid var(--tfs-border-subtle)" }}
         >
           {/* Volver al sitio */}
           <NavLink
             to="/"
             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium transition-all duration-200"
-            style={{ color: "rgba(248,248,248,0.3)" }}
+            style={{ color: "var(--tfs-text-muted)" }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "rgba(248,248,248,0.7)";
-              e.currentTarget.style.background = "rgba(248,248,248,0.04)";
+              e.currentTarget.style.color = "var(--tfs-text-primary)";
+              e.currentTarget.style.background = "var(--tfs-input-bg)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(248,248,248,0.3)";
+              e.currentTarget.style.color = "var(--tfs-text-muted)";
               e.currentTarget.style.background = "transparent";
             }}
           >
@@ -191,13 +196,13 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-medium transition-all duration-200"
-            style={{ color: "rgba(248,248,248,0.3)" }}
+            style={{ color: "var(--tfs-text-muted)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "#C1121F";
               e.currentTarget.style.background = "rgba(193,18,31,0.08)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(248,248,248,0.3)";
+              e.currentTarget.style.color = "var(--tfs-text-muted)";
               e.currentTarget.style.background = "transparent";
             }}
           >
@@ -207,7 +212,7 @@ export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
 
           <p
             className="text-center text-[8px] tracking-widest uppercase mt-3"
-            style={{ color: "rgba(248,248,248,0.1)", fontFamily: "'Space Mono', monospace" }}
+            style={{ color: "var(--tfs-text-subtle)", fontFamily: "'Space Mono', monospace" }}
           >
             TFS · 2026
           </p>

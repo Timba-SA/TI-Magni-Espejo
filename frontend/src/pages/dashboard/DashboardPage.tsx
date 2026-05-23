@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Package, AlertTriangle, TrendingUp, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Package, AlertTriangle, ArrowRight, LayoutDashboard, Tag, Users } from "lucide-react";
 import { DashboardCard } from "@/components/admin/DashboardCard";
 import { getCurrentUser } from "@/features/auth/services/authService";
 import { getInsumos } from "@/features/insumos/services/insumosService";
-import { formatCurrency } from "@/utils/formatCurrency";
 
 // ─── Separador de sección ────────────────────────────────────────────────────
 function SectionLabel({ label, code }: { label: string; code: string }) {
@@ -16,7 +15,7 @@ function SectionLabel({ label, code }: { label: string; code: string }) {
       >
         {code} — {label}
       </span>
-      <div style={{ flex: 1, height: 1, background: "rgba(248,248,248,0.04)" }} />
+      <div style={{ flex: 1, height: 1, background: "var(--tfs-divider)" }} />
     </div>
   );
 }
@@ -32,7 +31,7 @@ export function DashboardPage() {
     const fetchInsumos = async () => {
       try {
         const data = await getInsumos();
-        setInsumos(data);
+        setInsumos(data.items);
       } catch (error) {
         console.error("Error fetching insumos:", error);
       } finally {
@@ -43,15 +42,32 @@ export function DashboardPage() {
   }, []);
 
   const total = insumos.length;
-  const activos = insumos.filter((i) => i.estado === "Activo").length;
-  const inactivos = insumos.filter((i) => i.estado === "Inactivo").length;
-  const stockBajo = insumos.filter(
-    (i) => i.stockActual <= i.stockMinimo && i.estado === "Activo"
-  ).length;
-  const valorInventario = insumos.reduce(
-    (acc, i) => acc + i.stockActual * i.precioUnitario,
-    0
-  );
+  const alergenos = insumos.filter((i: any) => i.es_alergeno).length;
+
+  // ─── Configuración de módulos de acceso rápido ─────────────────────────────
+  const MODULES = [
+    {
+      to: "/insumos",
+      label: "Gestión de Insumos",
+      description: "Administrá el inventario completo. Creá, editá y eliminá insumos.",
+      icon: Package,
+      visibleFor: ["ADMIN", "ENCARGADO"],
+    },
+    {
+      to: "/categorias",
+      label: "Gestión de Categorías",
+      description: "Organizá los insumos por categoría. Creá y eliminá categorías.",
+      icon: Tag,
+      visibleFor: ["ADMIN", "ENCARGADO"],
+    },
+    {
+      to: "/usuarios",
+      label: "Gestión de Usuarios",
+      description: "Administrá roles y visualizá todos los usuarios registrados.",
+      icon: Users,
+      visibleFor: ["ADMIN"],
+    },
+  ].filter((m) => !user?.rol || m.visibleFor.includes(user.rol));
 
   return (
     <div className="p-6 md:p-8 space-y-10 max-w-5xl mx-auto">
@@ -65,7 +81,7 @@ export function DashboardPage() {
           <LayoutDashboard size={10} style={{ color: "rgba(255,90,0,0.5)" }} />
           <span
             className="text-[9px] tracking-[0.45em] uppercase"
-            style={{ color: "rgba(248,248,248,0.2)" }}
+            style={{ color: "var(--tfs-text-subtle)" }}
           >
             Panel principal
           </span>
@@ -77,7 +93,7 @@ export function DashboardPage() {
             fontSize: "clamp(1.5rem, 3vw, 2rem)",
             fontWeight: 300,
             letterSpacing: "-0.02em",
-            color: "#E8E8E8",
+            color: "var(--tfs-text-heading)",
           }}
         >
           Bienvenido,{" "}
@@ -88,12 +104,11 @@ export function DashboardPage() {
 
         <p
           className="text-xs"
-          style={{ color: "rgba(248,248,248,0.28)", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}
+          style={{ color: "var(--tfs-text-muted)", fontFamily: "'Space Mono', monospace", letterSpacing: "0.1em" }}
         >
           {user?.rol} · The Food Store Sistema de Gestión
         </p>
 
-        {/* Thin accent rule */}
         <div
           className="mt-5"
           style={{
@@ -109,190 +124,93 @@ export function DashboardPage() {
           <p className="text-xs font-mono text-white/50 tracking-widest">Cargando métricas...</p>
         </div>
       ) : (
-      <div>
-        <SectionLabel label="Métricas" code="01" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <DashboardCard
-            title="Total insumos"
-            value={total}
-            subtitle="en sistema"
-            icon={<Package size={16} />}
-            accent="orange"
-            onClick={() => navigate("/insumos")}
-          />
-          <DashboardCard
-            title="Activos"
-            value={activos}
-            subtitle={`${inactivos} inactivos`}
-            icon={<TrendingUp size={16} />}
-            accent="green"
-            onClick={() => navigate("/insumos")}
-          />
-          <DashboardCard
-            title="Stock bajo"
-            value={stockBajo}
-            subtitle={stockBajo > 0 ? "Requieren atención" : "Todo en orden"}
-            icon={<AlertTriangle size={16} />}
-            accent={stockBajo > 0 ? "yellow" : "green"}
-            onClick={() => navigate("/insumos")}
-          />
-          <DashboardCard
-            title="Valor inventario"
-            value={formatCurrency(valorInventario)}
-            subtitle="estimado actual"
-            icon={<span style={{ fontSize: "14px", fontWeight: 600 }}>$</span>}
-            accent="beige"
-          />
-        </div>
-      </div>
-      )}
-
-      {/* ── Acciones y alertas ────────────────────────────────────── */}
-      <div>
-        <SectionLabel label="Acceso rápido" code="02" />
-        <div className="grid md:grid-cols-2 gap-3">
-
-          {/* Acceso rápido a insumos */}
-          <button
-            onClick={() => navigate("/insumos")}
-            className="group text-left transition-all duration-300"
-            style={{
-              background: "#0F0F0F",
-              border: "1px solid rgba(248,248,248,0.05)",
-              padding: "1.25rem",
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              el.style.borderColor = "rgba(255,90,0,0.25)";
-              el.style.background = "#111111";
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              el.style.borderColor = "rgba(248,248,248,0.05)";
-              el.style.background = "#0F0F0F";
-            }}
-          >
-            {/* Top line */}
-            <div
-              style={{ height: "1px", background: "rgba(255,90,0,0.3)", marginBottom: "1rem" }}
+        <div>
+          <SectionLabel label="Métricas" code="01" />
+          <div className="grid grid-cols-2 gap-3">
+            <DashboardCard
+              title="Total ingredientes"
+              value={total}
+              subtitle="registrados en el sistema"
+              icon={<Package size={16} />}
+              accent="orange"
+              onClick={() => navigate("/insumos")}
             />
-
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Package size={14} style={{ color: "#FF5A00" }} />
-                <span
-                  className="text-[9px] tracking-[0.45em] uppercase"
-                  style={{ color: "rgba(255,90,0,0.65)", fontFamily: "'Space Mono', monospace" }}
-                >
-                  Módulo
-                </span>
-              </div>
-              <ArrowRight
-                size={14}
-                className="transition-transform duration-200 group-hover:translate-x-1"
-                style={{ color: "rgba(248,248,248,0.2)" }}
-              />
-            </div>
-
-            <h3
-              className="text-sm font-semibold mb-1"
-              style={{ color: "#E8E8E8", letterSpacing: "-0.01em" }}
-            >
-              Gestión de Insumos
-            </h3>
-            <p
-              className="text-xs"
-              style={{ color: "rgba(248,248,248,0.3)" }}
-            >
-              Administrá el inventario completo. Creá, editá y eliminá insumos.
-            </p>
-          </button>
-
-          {/* Alertas de stock */}
-          <div
-            style={{
-              background: "#0F0F0F",
-              border: "1px solid rgba(248,248,248,0.05)",
-              padding: "1.25rem",
-            }}
-          >
-            {/* Top line */}
-            <div
-              style={{
-                height: "1px",
-                background: stockBajo > 0
-                  ? "rgba(251,191,36,0.4)"
-                  : "rgba(52,211,153,0.3)",
-                marginBottom: "1rem",
-              }}
+            <DashboardCard
+              title="Alérgenos"
+              value={alergenos}
+              subtitle={alergenos > 0 ? "requieren etiquetado" : "ninguno registrado"}
+              icon={<AlertTriangle size={16} />}
+              accent="yellow"
+              onClick={() => navigate("/insumos")}
             />
-
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle
-                size={12}
-                style={{ color: stockBajo > 0 ? "#FBBF24" : "#34D399" }}
-              />
-              <span
-                className="text-[9px] tracking-[0.45em] uppercase"
-                style={{
-                  color: stockBajo > 0
-                    ? "rgba(251,191,36,0.65)"
-                    : "rgba(52,211,153,0.55)",
-                  fontFamily: "'Space Mono', monospace",
-                }}
-              >
-                {stockBajo > 0 ? `${stockBajo} alertas` : "Sin alertas"}
-              </span>
-            </div>
-
-            {stockBajo === 0 ? (
-              <p className="text-xs" style={{ color: "rgba(248,248,248,0.3)" }}>
-                ✓ Todos los insumos tienen stock suficiente.
-              </p>
-            ) : (
-              <div className="space-y-1.5">
-                {insumos
-                  .filter((i) => i.stockActual <= i.stockMinimo && i.estado === "Activo")
-                  .slice(0, 5)
-                  .map((i) => (
-                    <div
-                      key={i.id}
-                      className="flex items-center justify-between text-xs py-1.5"
-                      style={{ borderBottom: "1px solid rgba(248,248,248,0.03)" }}
-                    >
-                      <span style={{ color: "rgba(248,248,248,0.6)" }}>
-                        {i.nombre}
-                      </span>
-                      <span
-                        style={{ color: "#FBBF24", fontFamily: "'Space Mono', monospace", fontSize: "10px" }}
-                      >
-                        {i.stockActual}/{i.stockMinimo} {i.unidadMedida}
-                      </span>
-                    </div>
-                  ))}
-                {stockBajo > 5 && (
-                  <button
-                    onClick={() => navigate("/insumos")}
-                    className="text-[10px] mt-1 tracking-wider"
-                    style={{ color: "#FF5A00" }}
-                  >
-                    Ver {stockBajo - 5} más →
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </div>
+      )}
+
+      {/* ── Módulos / Acceso rápido ────────────────────────────────── */}
+      <div>
+        <SectionLabel label="Módulos" code="02" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {MODULES.map(({ to, label, description, icon: Icon }) => (
+            <button
+              key={to}
+              onClick={() => navigate(to)}
+              className="group text-left transition-all duration-300"
+              style={{
+                background: "var(--tfs-card-bg)",
+                border: "1px solid var(--tfs-border-subtle)",
+                padding: "1.25rem",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "rgba(255,90,0,0.25)";
+                el.style.background = "var(--tfs-card-hover)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "var(--tfs-border-subtle)";
+                el.style.background = "var(--tfs-card-bg)";
+              }}
+            >
+              <div style={{ height: "1px", background: "rgba(255,90,0,0.3)", marginBottom: "1rem" }} />
+
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Icon size={14} style={{ color: "#FF5A00" }} />
+                  <span
+                    className="text-[9px] tracking-[0.45em] uppercase"
+                    style={{ color: "rgba(255,90,0,0.65)", fontFamily: "'Space Mono', monospace" }}
+                  >
+                    Módulo
+                  </span>
+                </div>
+                <ArrowRight
+                  size={14}
+                  className="transition-transform duration-200 group-hover:translate-x-1"
+                  style={{ color: "var(--tfs-text-muted)" }}
+                />
+              </div>
+
+              <h3
+                className="text-sm font-semibold mb-1"
+                style={{ color: "var(--tfs-text-heading)", letterSpacing: "-0.01em" }}
+              >
+                {label}
+              </h3>
+              <p className="text-xs" style={{ color: "var(--tfs-text-muted)" }}>
+                {description}
+              </p>
+            </button>
+          ))}
+        </div>
       </div>
 
+
       {/* ── Footer ────────────────────────────────────────────────── */}
-      <div
-        className="pt-4"
-        style={{ borderTop: "1px solid rgba(248,248,248,0.03)" }}
-      >
+      <div className="pt-4" style={{ borderTop: "1px solid var(--tfs-divider)" }}>
         <p
           className="text-[9px] text-center tracking-[0.4em] uppercase"
-          style={{ color: "rgba(248,248,248,0.1)", fontFamily: "'Space Mono', monospace" }}
+          style={{ color: "var(--tfs-text-subtle)", fontFamily: "'Space Mono', monospace" }}
         >
           The Food Store · Sistema de gestión interna · 2026
         </p>

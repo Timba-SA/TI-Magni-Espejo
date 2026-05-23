@@ -50,3 +50,5 @@ backend/**/*.pyo
 backend/.env
 *.db
 *.sqlite3
+
+

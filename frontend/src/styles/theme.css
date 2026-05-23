@@ -50,6 +50,42 @@
   --vibrant-orange: #FF5A00;
   --deep-red: #C1121F;
   --warm-beige: #D4A574;
+
+  /* ── Tokens semánticos panel/login (dark default) ── */
+  --tfs-bg-primary: #0B0B0B;
+  --tfs-bg-secondary: #0D0D0D;
+  --tfs-bg-surface: rgba(13, 13, 13, 0.95);
+  --tfs-sidebar-bg: #111111;
+  --tfs-card-bg: #0F0F0F;
+  --tfs-card-hover: #111111;
+  --tfs-text-primary: rgba(248, 248, 248, 0.85);
+  --tfs-text-heading: #E8E8E8;
+  --tfs-text-muted: rgba(248, 248, 248, 0.4);
+  --tfs-text-subtle: rgba(248, 248, 248, 0.18);
+  --tfs-border-subtle: rgba(248, 248, 248, 0.05);
+  --tfs-border-mid: rgba(248, 248, 248, 0.12);
+  --tfs-divider: rgba(248, 248, 248, 0.04);
+  --tfs-input-bg: rgba(248, 248, 248, 0.04);
+  --tfs-input-border: rgba(248, 248, 248, 0.1);
+}
+
+/* ── Modo claro: sólo panel de gestión y login ────────────────────── */
+[data-theme="light"] {
+  --tfs-bg-primary: #FFFFFF;
+  --tfs-bg-secondary: #F4F4F5;
+  --tfs-bg-surface: rgba(255, 255, 255, 0.98);
+  --tfs-sidebar-bg: #F0F0F2;
+  --tfs-card-bg: #F8F8F9;
+  --tfs-card-hover: #EDEDEF;
+  --tfs-text-primary: #111111;
+  --tfs-text-heading: #0A0A0A;
+  --tfs-text-muted: #3D3D3D;
+  --tfs-text-subtle: #717171;
+  --tfs-border-subtle: rgba(0, 0, 0, 0.08);
+  --tfs-border-mid: rgba(0, 0, 0, 0.14);
+  --tfs-divider: rgba(0, 0, 0, 0.06);
+  --tfs-input-bg: #FFFFFF;
+  --tfs-input-border: rgba(0, 0, 0, 0.18);
 }
 
 .dark {

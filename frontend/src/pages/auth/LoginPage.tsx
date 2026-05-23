@@ -3,10 +3,11 @@ import { useNavigate, Navigate, Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // ─── Rotating ring (same DNA as the hamburger orbital button) ─────────────────
 function SlowOrbit() {
-  const TEXT = "THE FOOD STORE · EST. 2026 · NUEVA YORK · ACCESO INTERNO · ";
+  const TEXT = "THE FOOD STORE · EST. 2026 · BUENOS AIRES · ACCESO INTERNO · ";
   return (
     <div className="relative w-[260px] h-[260px] select-none">
       <motion.svg
@@ -14,6 +15,7 @@ function SlowOrbit() {
         className="absolute inset-0 w-full h-full"
         animate={{ rotate: 360 }}
         transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+        style={{ color: "var(--tfs-text-subtle)" }}
       >
         <defs>
           <path
@@ -22,14 +24,17 @@ function SlowOrbit() {
           />
         </defs>
         <text style={{ fontSize: 10.5, fontFamily: "Space Mono, monospace" }}>
-          <textPath href="#loginOrbit" startOffset="0%" fill="rgba(248,248,248,0.18)">
+          <textPath href="#loginOrbit" startOffset="0%" fill="currentColor">
             {TEXT}
           </textPath>
         </text>
       </motion.svg>
 
       {/* Inner circle */}
-      <div className="absolute inset-[28px] rounded-full border border-white/[0.06] flex items-center justify-center">
+      <div
+        className="absolute inset-[28px] rounded-full flex items-center justify-center"
+        style={{ border: "1px solid var(--tfs-border-mid)" }}
+      >
         <div className="text-center">
           <motion.div
             className="w-2 h-2 rounded-full bg-[#FF5A00] mx-auto mb-3"
@@ -37,8 +42,8 @@ function SlowOrbit() {
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
           />
           <p
-            className="text-[9px] tracking-[0.45em] uppercase text-white/20"
-            style={{ fontFamily: "Space Mono, monospace" }}
+            className="text-[9px] tracking-[0.45em] uppercase"
+            style={{ fontFamily: "Space Mono, monospace", color: "var(--tfs-text-subtle)" }}
           >
             Panel
             <br />
@@ -80,8 +85,8 @@ function LineInput({
           color: focused
             ? "#FF5A00"
             : active
-            ? "rgba(248,248,248,0.35)"
-            : "rgba(248,248,248,0.22)",
+              ? "var(--tfs-text-muted)"
+              : "var(--tfs-text-subtle)",
         }}
         style={{ top: active ? "0px" : "18px" }}
         transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
@@ -97,7 +102,11 @@ function LineInput({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         autoComplete={autoComplete}
-        className="w-full bg-transparent border-0 border-b border-white/10 pt-7 pb-2 text-sm text-[#F8F8F8] outline-none pr-10 transition-colors duration-200"
+        className="w-full bg-transparent border-0 pt-7 pb-2 text-sm outline-none pr-10 transition-colors duration-200"
+        style={{
+          borderBottom: "1px solid var(--tfs-input-border)",
+          color: "var(--tfs-text-primary)",
+        }}
       />
 
       {/* Animated orange underline */}
@@ -120,7 +129,7 @@ export function LoginPage() {
   const navigate = useNavigate();
 
   const [isRegistering, setIsRegistering] = useState(false);
-  const [user, setUser] = useState("");
+  const [username, setUsername] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
@@ -129,45 +138,52 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  if (isAuthenticated) return <Navigate to="/home" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (isRegistering) {
-        if (!user.trim() || !pass.trim() || !email.trim() || !nombre.trim()) {
-          setError("Completá todos los campos.");
-          return;
-        }
+      if (!username.trim() || !pass.trim() || !email.trim() || !nombre.trim()) {
+        setError("Completá todos los campos.");
+        return;
+      }
     } else {
-        if (!user.trim() || !pass.trim()) {
-          setError("Completá todos los campos.");
-          return;
-        }
+      if (!username.trim() || !pass.trim()) {
+        setError("Completá todos los campos.");
+        return;
+      }
     }
-    
+
     setLoading(true);
     await new Promise((r) => setTimeout(r, 700));
-    
-    let ok = false;
-    
+
+    let loggedUser = null;
+
     if (isRegistering) {
-        ok = await register({ username: user, email: email, password: pass, nombre: nombre });
-        if (!ok) setError("Error al registrarse. El usuario o email podría estar en uso.");
+      loggedUser = await register({ username: username, email: email, password: pass, nombre: nombre });
+      if (!loggedUser) setError("Error al registrarse. El usuario o email podría estar en uso.");
     } else {
-        ok = await login({ usernameOrEmail: user, password: pass });
-        if (!ok) setError("Credenciales incorrectas. Verificá usuario y contraseña.");
+      loggedUser = await login({ usernameOrEmail: username, password: pass });
+      if (!loggedUser) setError("Credenciales incorrectas. Verificá usuario y contraseña.");
     }
-    
+
     setLoading(false);
-    if (ok) navigate("/home", { replace: true });
+    if (loggedUser) {
+      navigate("/", { replace: true });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden">
       {/* ── LEFT EDITORIAL PANEL ─────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col w-[58%] relative overflow-hidden">
+      <div
+        className="hidden lg:flex flex-col w-[58%] relative overflow-hidden"
+        style={{ background: "var(--tfs-bg-primary)" }}
+      >
         {/* Grain texture */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.045] z-0"
@@ -184,9 +200,9 @@ export function LoginPage() {
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-transparent via-[#FF5A00]/70 to-transparent" />
 
         {/* Grid lines */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        <div className="absolute inset-0 pointer-events-none opacity-[0.05]"
           style={{
-            backgroundImage: "linear-gradient(to right, #F8F8F8 1px, transparent 1px), linear-gradient(to bottom, #F8F8F8 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(to right, var(--tfs-text-heading) 1px, transparent 1px), linear-gradient(to bottom, var(--tfs-text-heading) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
@@ -200,7 +216,8 @@ export function LoginPage() {
         >
           <Link
             to="/"
-            className="group inline-flex items-center gap-2 text-[10px] tracking-[0.35em] uppercase font-mono text-white/20 hover:text-white/50 transition-colors duration-300"
+            className="group inline-flex items-center gap-2 text-[10px] tracking-[0.35em] uppercase font-mono transition-colors duration-300"
+            style={{ color: "var(--tfs-text-subtle)" }}
           >
             <motion.span
               className="inline-block"
@@ -250,16 +267,16 @@ export function LoginPage() {
             transition={{ duration: 0.9, delay: 0.5, ease: [0.76, 0, 0.24, 1] }}
           >
             <h1
-              className="text-[3.8rem] font-bold leading-[0.88] text-white/90 tracking-tight"
-              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-[3.8rem] font-bold leading-[0.88] tracking-tight"
+              style={{ fontFamily: "'Playfair Display', serif", color: "var(--tfs-text-heading)" }}
             >
               The Food
               <br />
               <em className="text-[#FF5A00] not-italic">Store.</em>
             </h1>
             <p
-              className="mt-5 text-[10px] tracking-[0.45em] uppercase text-white/25"
-              style={{ fontFamily: "Space Mono, monospace" }}
+              className="mt-5 text-[10px] tracking-[0.45em] uppercase"
+              style={{ fontFamily: "Space Mono, monospace", color: "var(--tfs-text-muted)" }}
             >
               Sistema de gestión interna
             </p>
@@ -268,37 +285,38 @@ export function LoginPage() {
 
         {/* Bottom info row */}
         <motion.div
-          className="relative z-10 px-10 py-8 flex items-end justify-between border-t border-white/[0.04]"
+          className="relative z-10 px-10 py-8 flex items-end justify-between"
+          style={{ borderTop: "1px solid var(--tfs-border-subtle)" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
           <div>
             <p
-              className="text-[9px] tracking-[0.4em] text-white/15 uppercase mb-1"
-              style={{ fontFamily: "Space Mono, monospace" }}
+              className="text-[9px] tracking-[0.4em] uppercase mb-1"
+              style={{ fontFamily: "Space Mono, monospace", color: "var(--tfs-text-subtle)" }}
             >
               Ubicación
             </p>
-            <p className="text-sm text-white/30 font-mono">Nueva York, NY</p>
+            <p className="text-sm font-mono" style={{ color: "var(--tfs-text-muted)" }}>Buenos Aires, BSAS</p>
           </div>
           <div className="text-right">
             <p
-              className="text-[9px] tracking-[0.4em] text-white/15 uppercase mb-1"
-              style={{ fontFamily: "Space Mono, monospace" }}
+              className="text-[9px] tracking-[0.4em] uppercase mb-1"
+              style={{ fontFamily: "Space Mono, monospace", color: "var(--tfs-text-subtle)" }}
             >
               Est.
             </p>
-            <p className="text-sm text-white/30 font-mono">2026</p>
+            <p className="text-sm font-mono" style={{ color: "var(--tfs-text-muted)" }}>2026</p>
           </div>
         </motion.div>
       </div>
 
       {/* ── VERTICAL DIVIDER ─────────────────────────────────────────── */}
-      <div className="hidden lg:block w-[1px] bg-gradient-to-b from-transparent via-white/[0.07] to-transparent" />
+      <div className="hidden lg:block w-[1px]" style={{ background: "var(--tfs-border-mid)" }} />
 
       {/* ── RIGHT FORM PANEL ─────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col relative bg-[#0c0c0c] overflow-y-auto">
+      <div className="flex-1 flex flex-col relative overflow-y-auto" style={{ background: "var(--tfs-bg-secondary)" }}>
         {/* Grain */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.03] z-0"
@@ -308,14 +326,15 @@ export function LoginPage() {
           }}
         />
 
-        {/* Top corner tag */}
-        <div className="relative z-10 flex justify-end p-10 pb-0">
+        {/* Top corner tag + theme toggle */}
+        <div className="relative z-10 flex items-center justify-between p-10 pb-0">
           <span
-            className="text-[9px] tracking-[0.45em] text-white/12 uppercase"
-            style={{ fontFamily: "Space Mono, monospace" }}
+            className="text-[9px] tracking-[0.45em] uppercase"
+            style={{ color: "var(--tfs-text-subtle)", fontFamily: "Space Mono, monospace" }}
           >
             Acceso restringido
           </span>
+          <ThemeToggle size={14} />
         </div>
 
         {/* Form content */}
@@ -329,13 +348,13 @@ export function LoginPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="flex items-center gap-3 mb-5">
-              <span className="text-[9px] tracking-[0.45em] text-white/18 uppercase font-mono">
+              <span className="text-[9px] tracking-[0.45em] uppercase font-mono" style={{ color: "var(--tfs-text-subtle)" }}>
                 ──── {isRegistering ? "Nuevo Usuario" : "Ingresar"}
               </span>
             </div>
             <h2
-              className="text-3xl font-semibold text-[#F8F8F8] leading-tight"
-              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-3xl font-semibold leading-tight"
+              style={{ fontFamily: "'Playfair Display', serif", color: "var(--tfs-text-heading)" }}
             >
               {isRegistering ? "Creá tu " : "Accedé al "}
               <br className="hidden sm:block" />
@@ -352,36 +371,36 @@ export function LoginPage() {
             transition={{ duration: 0.7, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
             <AnimatePresence mode="popLayout">
-                {isRegistering && (
-                    <motion.div
-                        key="register-fields"
-                        initial={{ opacity: 0, height: 0, filter: "blur(4px)" }}
-                        animate={{ opacity: 1, height: "auto", filter: "blur(0px)" }}
-                        exit={{ opacity: 0, height: 0, filter: "blur(4px)" }}
-                        transition={{ duration: 0.4 }}
-                        className="space-y-8"
-                    >
-                        <LineInput
-                          label="Nombre Completo"
-                          value={nombre}
-                          onChange={setNombre}
-                          autoComplete="name"
-                        />
-                        <LineInput
-                          label="Correo Electrónico"
-                          value={email}
-                          onChange={setEmail}
-                          autoComplete="email"
-                          type="email"
-                        />
-                    </motion.div>
-                )}
+              {isRegistering && (
+                <motion.div
+                  key="register-fields"
+                  initial={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, height: "auto", filter: "blur(0px)" }}
+                  exit={{ opacity: 0, height: 0, filter: "blur(4px)" }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-8"
+                >
+                  <LineInput
+                    label="Nombre Completo"
+                    value={nombre}
+                    onChange={setNombre}
+                    autoComplete="name"
+                  />
+                  <LineInput
+                    label="Correo Electrónico"
+                    value={email}
+                    onChange={setEmail}
+                    autoComplete="email"
+                    type="email"
+                  />
+                </motion.div>
+              )}
             </AnimatePresence>
 
             <LineInput
               label={isRegistering ? "Nombre de usuario" : "Usuario o email"}
-              value={user}
-              onChange={setUser}
+              value={username}
+              onChange={setUsername}
               autoComplete="username"
             />
 
@@ -395,7 +414,8 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass((p) => !p)}
-                  className="text-white/25 hover:text-white/60 transition-colors"
+                  className="transition-colors"
+                  style={{ color: "var(--tfs-text-subtle)" }}
                 >
                   {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -439,8 +459,8 @@ export function LoginPage() {
                 {/* Border */}
                 <div className="relative border border-[#FF5A00]/50 group-hover:border-[#FF5A00] transition-colors duration-300 px-6 py-4 flex items-center justify-between">
                   <span
-                    className="text-[11px] tracking-[0.4em] uppercase font-mono text-[#F8F8F8] transition-colors"
-                    style={{ position: "relative" }}
+                    className="text-[11px] tracking-[0.4em] uppercase font-mono transition-colors"
+                    style={{ position: "relative", color: "var(--tfs-text-heading)" }}
                   >
                     {loading ? (
                       <span className="flex items-center gap-3">
@@ -457,25 +477,26 @@ export function LoginPage() {
                       transition={{ duration: 0.2 }}
                       className="relative"
                     >
-                      <ArrowRight size={14} className="text-[#F8F8F8]" />
+                      <ArrowRight size={14} style={{ color: "var(--tfs-text-heading)" }} />
                     </motion.span>
                   )}
                 </div>
               </motion.button>
             </div>
-            
+
             {/* Toggle Login/Register */}
             <div className="pt-4 text-center">
-                <button 
-                    type="button" 
-                    onClick={() => {
-                        setIsRegistering(!isRegistering);
-                        setError("");
-                    }}
-                    className="text-[10px] tracking-[0.2em] text-white/40 hover:text-white/80 uppercase font-mono transition-colors"
-                >
-                    {isRegistering ? "¿Ya tenés cuenta? Ingresá acá" : "¿No tenés cuenta? Registrate acá"}
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRegistering(!isRegistering);
+                  setError("");
+                }}
+                className="text-[10px] tracking-[0.2em] uppercase font-mono transition-colors"
+                style={{ color: "var(--tfs-text-muted)" }}
+              >
+                {isRegistering ? "¿Ya tenés cuenta? Ingresá acá" : "¿No tenés cuenta? Registrate acá"}
+              </button>
             </div>
           </motion.form>
         </div>
@@ -489,15 +510,15 @@ export function LoginPage() {
         >
           <div className="border-t border-white/[0.05] pt-6">
             <p
-              className="text-[9px] tracking-[0.4em] text-white/15 uppercase mb-3"
-              style={{ fontFamily: "Space Mono, monospace" }}
+              className="text-[9px] tracking-[0.4em] uppercase mb-3"
+              style={{ fontFamily: "Space Mono, monospace", color: "var(--tfs-text-subtle)" }}
             >
               Demo
             </p>
-            <p className="text-[11px] text-white/20 font-mono">
-              <span className="text-white/35">admin</span>
+            <p className="text-[11px] font-mono" style={{ color: "var(--tfs-text-subtle)" }}>
+              <span style={{ color: "var(--tfs-text-muted)" }}>admin</span>
               {" · "}
-              <span className="text-white/35">admin123</span>
+              <span style={{ color: "var(--tfs-text-muted)" }}>admin123</span>
             </p>
           </div>
         </motion.div>
