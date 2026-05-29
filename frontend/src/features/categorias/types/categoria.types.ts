@@ -1,5 +1,6 @@
 export interface Categoria {
   id: number;
+  parent_id?: number;
   nombre: string;
   descripcion?: string;
   is_active: boolean;
@@ -9,6 +10,7 @@ export interface Categoria {
 export interface CategoriaFormData {
   nombre: string;
   descripcion?: string;
+  parent_id?: number;
 }
 
 export interface CategoriaListResponse {

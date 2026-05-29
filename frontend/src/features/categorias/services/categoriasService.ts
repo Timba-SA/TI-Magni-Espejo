@@ -19,6 +19,13 @@ export async function deleteCategoria(id: number): Promise<Categoria> {
   return fetchApi<Categoria>(`/categorias/${id}`, { method: "DELETE" });
 }
 
+export async function updateCategoria(id: number, data: CategoriaFormData): Promise<Categoria> {
+  return fetchApi<Categoria>(`/categorias/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function exportarCategorias(): Promise<void> {
   const token = localStorage.getItem("the_food_store_token");
   const headers: HeadersInit = {};
