@@ -25,13 +25,15 @@ export async function obtenerPedido(id: number): Promise<PedidoDetailResponse> {
 export async function avanzarEstadoPedido(
   id: number,
   estadoHacia: string,
-  motivo?: string
+  motivo?: string,
+  devolverStock?: boolean
 ): Promise<PedidoResponse> {
   return fetchApi<PedidoResponse>(`/pedidos/${id}/estado`, {
     method: "PATCH",
     body: JSON.stringify({
       estado_hacia: estadoHacia,
       motivo: motivo || undefined,
+      devolver_stock: devolverStock !== undefined ? devolverStock : true,
     }),
   });
 }

@@ -52,6 +52,85 @@ const inputStyle = {
   color: "var(--tfs-text-primary)",
 };
 
+function IngredientCombobox({
+  value,
+  onChange,
+  insumos,
+}: {
+  value: number;
+  onChange: (id: number) => void;
+  insumos: Ingrediente[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const selectedIngrediente = insumos.find((i) => i.id === value);
+
+  // Filtrar insumos por nombre
+  const filteredInsumos = insumos.filter((i) =>
+    i.nombre.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Buscar ingrediente..."
+        value={isOpen ? search : (selectedIngrediente?.nombre ?? "")}
+        onChange={(e) => {
+          if (!isOpen) setIsOpen(true);
+          setSearch(e.target.value);
+        }}
+        onFocus={() => {
+          setIsOpen(true);
+          setSearch("");
+        }}
+        onBlur={() => {
+          // Un pequeño delay para permitir que el click en la lista se registre antes de cerrar
+          setTimeout(() => setIsOpen(false), 200);
+        }}
+        className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all duration-200 h-9 py-1 px-3"
+        style={{
+          background: "var(--tfs-input-bg)",
+          border: "1px solid var(--tfs-input-border)",
+          color: "var(--tfs-text-primary)",
+        }}
+      />
+      {isOpen && (
+        <div
+          className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl shadow-xl border p-1"
+          style={{
+            background: "var(--tfs-card-bg, #18181b)",
+            borderColor: "var(--tfs-input-border, #27272a)",
+          }}
+        >
+          {filteredInsumos.length === 0 ? (
+            <p className="text-xs p-2 text-center text-zinc-500">No se encontraron resultados</p>
+          ) : (
+            filteredInsumos.map((i) => (
+              <div
+                key={i.id}
+                onMouseDown={() => {
+                  onChange(i.id);
+                  setSearch(i.nombre);
+                  setIsOpen(false);
+                }}
+                className="text-xs px-3 py-2 rounded-lg hover:bg-[#FF5A00]/10 hover:text-[#FF5A00] cursor-pointer transition-all flex items-center justify-between"
+                style={{ color: "var(--tfs-text-primary)" }}
+              >
+                <span>{i.nombre}</span>
+                <span className="text-[10px] font-mono text-zinc-500 font-normal">
+                  ({i.unidad_medida?.simbolo ?? "u"})
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProductoForm({
   open,
   producto,
@@ -77,6 +156,7 @@ export function ProductoForm({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ProductoFormData>({
     defaultValues: {
@@ -96,6 +176,33 @@ export function ProductoForm({
     control,
     name: "ingredientes",
   });
+
+  // 1. Observar ingredientes de la receta en tiempo real
+  const watchedIngredientes = watch("ingredientes") || [];
+
+  // 2. Calcular precio base en tiempo real
+  const computedPrecioBase = watchedIngredientes.reduce((sum, item) => {
+    const ingrediente = insumos.find((i) => i.id === Number(item.ingrediente_id));
+    if (!ingrediente) return sum;
+    return sum + (Number(ingrediente.costo_unitario) * (Number(item.cantidad) || 0));
+  }, 0);
+
+  // 3. Calcular stock dinámico en tiempo real
+  const computedStockCantidad = watchedIngredientes.length === 0 ? 0 : Math.floor(
+    Math.min(
+      ...watchedIngredientes.map((item) => {
+        const ingrediente = insumos.find((i) => i.id === Number(item.ingrediente_id));
+        if (!ingrediente || !item.cantidad) return 0;
+        return Number(ingrediente.stock_actual) / Number(item.cantidad);
+      })
+    )
+  );
+
+  // Sincronizar precio y stock calculados con el formulario
+  useEffect(() => {
+    setValue("precio_base", computedPrecioBase);
+    setValue("stock_cantidad", computedStockCantidad);
+  }, [computedPrecioBase, computedStockCantidad, setValue]);
 
   // Resetear formulario al abrir / cambiar producto
   useEffect(() => {
@@ -187,7 +294,6 @@ export function ProductoForm({
         return;
       }
 
-      // Asegurar que haya al menos una principal si hay categorías seleccionadas
       if (finalCategorias.length > 0 && !finalCategorias.some((c) => c.es_principal)) {
         finalCategorias[0].es_principal = true;
       }
@@ -195,22 +301,22 @@ export function ProductoForm({
       // 2. Mapear imágenes_url a partir del input
       const finalImagenes = imagenUrlInput.trim() ? [imagenUrlInput.trim()] : [];
 
-      // 3. Mapear ingredientes
+      // 3. Mapear ingredientes (unidad_medida_id se fuerza a null, el backend la asignará)
       const finalIngredientes = data.ingredientes.map((ing) => ({
         ingrediente_id: Number(ing.ingrediente_id),
         cantidad: Number(ing.cantidad) || 1,
-        unidad_medida_id: ing.unidad_medida_id ? Number(ing.unidad_medida_id) : null,
+        unidad_medida_id: null,
         es_removible: !!ing.es_removible,
       }));
 
       const mappedData: ProductoFormData = {
         nombre: data.nombre,
         descripcion: data.descripcion || "",
-        precio_base: Number(data.precio_base) || 0,
+        precio_base: computedPrecioBase,
         imagenes_url: finalImagenes,
-        stock_cantidad: Number(data.stock_cantidad) || 0,
+        stock_cantidad: computedStockCantidad,
         disponible: !!data.disponible,
-        unidad_venta_id: data.unidad_venta_id ? Number(data.unidad_venta_id) : null,
+        unidad_venta_id: null, // Sin unidad de venta
         categorias: finalCategorias,
         ingredientes: finalIngredientes,
       };
@@ -224,7 +330,7 @@ export function ProductoForm({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        className="max-w-4xl w-full shadow-2xl rounded-2xl p-0 overflow-hidden"
+        className="sm:max-w-7xl w-[95vw] shadow-2xl rounded-2xl p-0 overflow-hidden"
         style={{
           background: "var(--tfs-card-bg)",
           border: "1px solid var(--tfs-border-mid)",
@@ -267,7 +373,7 @@ export function ProductoForm({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="px-7 py-5 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit(onSubmit)} className="px-7 py-5 max-h-[85vh] overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Columna Izquierda: Detalles del Producto */}
             <div className="space-y-5">
@@ -312,51 +418,40 @@ export function ProductoForm({
               <div className="grid grid-cols-2 gap-4">
                 {/* Precio Base */}
                 <div className="space-y-2">
-                  <FieldLabel required>Precio Base ($)</FieldLabel>
-                  <Controller
-                    name="precio_base"
-                    control={control}
-                    rules={{
-                      required: "El precio es obligatorio",
-                      min: { value: 0.01, message: "El precio debe ser mayor a cero" },
+                  <FieldLabel>Precio Base (Calculado)</FieldLabel>
+                  <div
+                    className={`${inputClass} select-none flex items-center font-mono font-bold h-10`}
+                    style={{
+                      ...inputStyle,
+                      background: "rgba(255,255,255,0.02)",
+                      borderColor: "var(--tfs-border-subtle)",
+                      opacity: 0.8,
                     }}
-                    render={({ field }) => (
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        placeholder="0.00"
-                        className={inputClass}
-                        style={inputStyle}
-                      />
-                    )}
-                  />
-                  <FieldError message={errors.precio_base?.message} />
+                  >
+                    $ {computedPrecioBase.toFixed(2)}
+                  </div>
+                  <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
+                    Suma del costo de la receta
+                  </p>
                 </div>
 
                 {/* Stock Cantidad */}
                 <div className="space-y-2">
-                  <FieldLabel required>Stock Cantidad</FieldLabel>
-                  <Controller
-                    name="stock_cantidad"
-                    control={control}
-                    rules={{
-                      required: "El stock es obligatorio",
-                      min: { value: 0, message: "No puede ser negativo" },
+                  <FieldLabel>Stock Disponible (Calculado)</FieldLabel>
+                  <div
+                    className={`${inputClass} select-none flex items-center font-mono font-bold h-10`}
+                    style={{
+                      ...inputStyle,
+                      background: "rgba(255,255,255,0.02)",
+                      borderColor: "var(--tfs-border-subtle)",
+                      opacity: 0.8,
                     }}
-                    render={({ field }) => (
-                      <input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        placeholder="0"
-                        className={inputClass}
-                        style={inputStyle}
-                      />
-                    )}
-                  />
-                  <FieldError message={errors.stock_cantidad?.message} />
+                  >
+                    {computedStockCantidad} unidades
+                  </div>
+                  <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
+                    Mínimo stock de insumos receta
+                  </p>
                 </div>
               </div>
 
@@ -373,44 +468,11 @@ export function ProductoForm({
                 />
               </div>
 
-              {/* Grid: Unidad Venta y Disponible */}
-              <div className="grid grid-cols-2 gap-4 items-center pt-2">
-                {/* Unidad de Venta */}
-                <div className="space-y-2">
-                  <FieldLabel>Unidad de Venta</FieldLabel>
-                  <Controller
-                    name="unidad_venta_id"
-                    control={control}
-                    render={({ field }) => (
-                      <select
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                        className={inputClass}
-                        style={{
-                          ...inputStyle,
-                          color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
-                        }}
-                      >
-                        <option value="" style={{ background: "var(--tfs-card-bg)", color: "var(--tfs-text-muted)" }}>
-                          Porción / Unidad (Por defecto)
-                        </option>
-                        {unidades.map((u) => (
-                          <option
-                            key={u.id}
-                            value={u.id}
-                            style={{ background: "var(--tfs-card-bg)", color: "var(--tfs-text-primary)" }}
-                          >
-                            {u.nombre} ({u.simbolo})
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  />
-                </div>
-
+              {/* Grid: Disponible */}
+              <div className="pt-2">
                 {/* Disponible Checkbox */}
                 <div
-                  className="flex items-center gap-3 py-3 px-4 rounded-xl transition-all self-end"
+                  className="flex items-center gap-3 py-3.5 px-4 rounded-xl transition-all hover:bg-[var(--tfs-input-bg)]/80"
                   style={{ background: "var(--tfs-input-bg)", border: "1px solid var(--tfs-input-border)" }}
                 >
                   <Controller
@@ -427,7 +489,10 @@ export function ProductoForm({
                     )}
                   />
                   <label htmlFor="disponible" className="text-sm cursor-pointer select-none font-medium" style={{ color: "var(--tfs-text-primary)" }}>
-                    Disponible
+                    Disponible para venta
+                    <span className="block text-xs font-mono tracking-wider mt-0.5" style={{ color: "var(--tfs-text-muted)" }}>
+                      Habilita o deshabilita la compra del producto en la carta.
+                    </span>
                   </label>
                 </div>
               </div>
@@ -506,7 +571,7 @@ export function ProductoForm({
               </div>
 
               {/* Lista de ingredientes dinámicos */}
-              <div className="flex-1 space-y-3 overflow-y-auto max-h-[360px] pr-1">
+              <div className="flex-1 space-y-3 overflow-y-auto max-h-[460px] pr-1">
                 {fields.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center border border-dashed rounded-xl" style={{ borderColor: "var(--tfs-input-border)" }}>
                     <p className="text-2xl mb-1.5">{insumos.length === 0 ? "⚠️" : "🧂"}</p>
@@ -532,10 +597,14 @@ export function ProductoForm({
                   </div>
                 ) : (
                   fields.map((field, index) => {
+                    const ingId = watchedIngredientes[index]?.ingrediente_id;
+                    const ingredienteSeleccionado = insumos.find((i) => i.id === Number(ingId));
+                    const simboloMedida = ingredienteSeleccionado?.unidad_medida?.simbolo ?? "";
+
                     return (
                       <div
                         key={field.id}
-                        className="p-3.5 rounded-xl border space-y-3 relative group"
+                        className="p-3.5 rounded-xl border space-y-3 relative group animate-fade-in"
                         style={{
                           background: "var(--tfs-input-bg)",
                           borderColor: "var(--tfs-input-border)",
@@ -559,25 +628,11 @@ export function ProductoForm({
                               control={control}
                               rules={{ required: true }}
                               render={({ field: selectField }) => (
-                                <select
-                                  value={selectField.value ?? ""}
-                                  onChange={(e) => selectField.onChange(Number(e.target.value))}
-                                  className={`${inputClass} h-9 py-1 px-3`}
-                                  style={inputStyle}
-                                >
-                                  <option value="" disabled style={{ background: "var(--tfs-card-bg)" }}>
-                                    Seleccionar insumo...
-                                  </option>
-                                  {insumos.map((i) => (
-                                    <option
-                                      key={i.id}
-                                      value={i.id}
-                                      style={{ background: "var(--tfs-card-bg)", color: "var(--tfs-text-primary)" }}
-                                    >
-                                      {i.nombre} ({i.unidad_medida?.simbolo ?? "u"})
-                                    </option>
-                                  ))}
-                                </select>
+                                <IngredientCombobox
+                                  value={selectField.value}
+                                  onChange={selectField.onChange}
+                                  insumos={insumos}
+                                />
                               )}
                             />
                           </div>
@@ -609,31 +664,17 @@ export function ProductoForm({
 
                             <div className="space-y-1">
                               <FieldLabel>Unidad Medida</FieldLabel>
-                              <Controller
-                                name={`ingredientes.${index}.unidad_medida_id`}
-                                control={control}
-                                render={({ field: unitField }) => (
-                                  <select
-                                    value={unitField.value ?? ""}
-                                    onChange={(e) => unitField.onChange(e.target.value ? Number(e.target.value) : null)}
-                                    className={`${inputClass} h-9 py-1 px-3`}
-                                    style={inputStyle}
-                                  >
-                                    <option value="" style={{ background: "var(--tfs-card-bg)" }}>
-                                      Por defecto insumo
-                                    </option>
-                                    {unidades.map((u) => (
-                                      <option
-                                        key={u.id}
-                                        value={u.id}
-                                        style={{ background: "var(--tfs-card-bg)", color: "var(--tfs-text-primary)" }}
-                                      >
-                                        {u.nombre} ({u.simbolo})
-                                      </option>
-                                    ))}
-                                  </select>
-                                )}
-                              />
+                              <div
+                                className={`${inputClass} h-9 flex items-center text-xs select-none`}
+                                style={{
+                                  ...inputStyle,
+                                  background: "rgba(255,255,255,0.01)",
+                                  borderColor: "var(--tfs-border-subtle)",
+                                  opacity: 0.7,
+                                }}
+                              >
+                                {simboloMedida || "—"}
+                              </div>
                             </div>
                           </div>
                         </div>

@@ -1,14 +1,20 @@
-import { useContext } from "react";
-import { AuthContext } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/store/authStore";
 
 /**
- * Hook para acceder al estado global de autenticación.
- * Debe usarse dentro de <AuthProvider>.
+ * Hook para acceder al estado global de autenticación consumiendo el store de Zustand.
  */
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth debe usarse dentro de <AuthProvider>");
-  }
-  return ctx;
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+  const logout = useAuthStore((state) => state.logout);
+
+  return {
+    user,
+    isAuthenticated,
+    login,
+    register,
+    logout
+  };
 }

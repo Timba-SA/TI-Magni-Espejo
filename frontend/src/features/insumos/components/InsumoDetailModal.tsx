@@ -82,7 +82,7 @@ export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalPr
             value={
               <div className="flex flex-col items-end gap-1">
                 <span className="font-mono font-bold">
-                  {Number(insumo.stock_actual)} u
+                  {Number(insumo.stock_actual)} {insumo.unidad_medida?.simbolo ?? "u"}
                 </span>
                 {insumo.stock_actual <= insumo.stock_minimo && insumo.stock_minimo > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
@@ -93,21 +93,11 @@ export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalPr
               </div>
             }
           />
-          {insumo.peso !== null && insumo.peso !== undefined && (
-            <DetailRow
-              label="Peso Unitario"
-              value={
-                <span className="font-mono">
-                  {Number(insumo.peso).toFixed(1)} {insumo.unidad_medida?.simbolo ?? "u"}
-                </span>
-              }
-            />
-          )}
           <DetailRow
             label="Stock Mínimo Alerta"
             value={
               <span className="font-mono">
-                {Number(insumo.stock_minimo)} u
+                {Number(insumo.stock_minimo)} {insumo.unidad_medida?.simbolo ?? "u"}
               </span>
             }
           />
@@ -115,7 +105,7 @@ export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalPr
             label="Costo Unitario"
             value={
               <span className="font-mono">
-                $ {Number(insumo.costo_unitario).toFixed(2)} / u
+                $ {Number(insumo.costo_unitario).toFixed(2)} / {insumo.unidad_medida?.simbolo ?? "u"}
               </span>
             }
           />

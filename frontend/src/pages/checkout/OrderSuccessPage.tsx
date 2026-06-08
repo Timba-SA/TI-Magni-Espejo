@@ -1,22 +1,51 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { CheckCircle2, ShoppingBag, CreditCard, Calendar, Truck, ArrowRight } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, ShoppingBag, CreditCard, Calendar, Truck, ArrowRight } from "lucide-react";
 import type { PedidoResponse } from "@/features/checkout/types/checkout.types";
+import { obtenerPedido, iniciarPago } from "@/features/checkout/services/checkoutService";
 import { toast } from "sonner";
 
 export const OrderSuccessPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [pedido, setPedido] = useState<PedidoResponse | null>(null);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Recuperar el pedido desde el estado de navegación
     const statePedido = location.state?.pedido as PedidoResponse;
+    
+    // Parsear parámetros de Mercado Pago de la URL
+    const params = new URLSearchParams(location.search);
+    const status = params.get("status");
+    const externalReference = params.get("external_reference");
+
+    if (status) {
+      setPaymentStatus(status);
+    }
+
     if (statePedido) {
       setPedido(statePedido);
+    } else if (externalReference && externalReference.startsWith("pedido_")) {
+      const pedidoId = parseInt(externalReference.replace("pedido_", ""), 10);
+      if (!isNaN(pedidoId)) {
+        setIsLoadingOrder(true);
+        obtenerPedido(pedidoId)
+          .then((data) => {
+            setPedido(data);
+          })
+          .catch((err) => {
+            console.error("Error al cargar el pedido desde referencia externa:", err);
+            toast.error("No pudimos cargar el detalle de tu pedido.");
+            navigate("/menu", { replace: true });
+          })
+          .finally(() => {
+            setIsLoadingOrder(false);
+          });
+      }
     } else {
-      // Si no hay datos del pedido, redirige al menú tras un instante
+      // Si no hay datos del pedido ni referencia en la URL, redirige al menú tras un instante
       const timer = setTimeout(() => {
         navigate("/menu", { replace: true });
       }, 3000);
@@ -38,19 +67,78 @@ export const OrderSuccessPage: React.FC = () => {
     return codigo;
   };
 
-  if (!pedido) {
+  const [isPaying, setIsPaying] = useState(false);
+
+  const handlePay = async () => {
+    if (!pedido) return;
+    setIsPaying(true);
+    try {
+      toast.loading("Iniciando pago con Mercado Pago...", { id: "pago-success-loading" });
+      const paymentInit = await iniciarPago(pedido.id);
+      toast.dismiss("pago-success-loading");
+      toast.success("Redirigiendo a Mercado Pago...");
+      window.location.href = paymentInit.init_point;
+    } catch (err: any) {
+      console.error("Error al iniciar pago desde success:", err);
+      toast.dismiss("pago-success-loading");
+      toast.error("No se pudo conectar con Mercado Pago. Por favor, intentá de nuevo.");
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  if (isLoadingOrder || !pedido) {
     return (
       <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto" />
-          <h3 className="text-lg font-bold">Cargando confirmación...</h3>
-          <p className="text-sm text-neutral-400">Si no se carga, te redirigimos al menú.</p>
+          <h3 className="text-lg font-bold">
+            {isLoadingOrder ? "Buscando detalles del pedido..." : "Cargando confirmación..."}
+          </h3>
+          <p className="text-sm text-neutral-400">
+            {isLoadingOrder ? "Esperá un segundo por favor." : "Si no se carga, te redirigimos al menú."}
+          </p>
         </div>
       </div>
     );
   }
 
   const isMercadoPago = pedido.forma_pago_codigo.toUpperCase() === "MERCADOPAGO";
+
+  // Determinar los detalles visuales de la página según el estado de pago
+  let statusIcon = <CheckCircle2 size={44} className="stroke-[1.5]" />;
+  let statusColorClass = "text-orange-500 bg-orange-500/10 border-orange-500/20";
+  let statusTitle = "¡Pedido Confirmado!";
+  let statusMessage = "¡Buenísimo, loco! Tu pedido ha sido ingresado al sistema. En breve nos ponemos a cocinar tu comida favorita.";
+  let showPaymentButton = isMercadoPago && pedido.estado_codigo === "PENDIENTE";
+
+  if (isMercadoPago) {
+    if (paymentStatus === "approved" || pedido.estado_codigo !== "PENDIENTE") {
+      statusIcon = <CheckCircle2 size={44} className="stroke-[1.5]" />;
+      statusColorClass = "text-green-500 bg-green-500/10 border-green-500/20";
+      statusTitle = "¡Pago Aprobado!";
+      statusMessage = "¡Buenísimo, loco! Tu pago fue aprobado de manera segura por Mercado Pago. Tu pedido ya está en camino a la cocina.";
+      showPaymentButton = false;
+    } else if (paymentStatus === "pending") {
+      statusIcon = <Clock size={44} className="stroke-[1.5]" />;
+      statusColorClass = "text-yellow-500 bg-yellow-500/10 border-yellow-500/20";
+      statusTitle = "Pago Pendiente";
+      statusMessage = "El pago está en proceso de acreditación por Mercado Pago. Apenas se confirme, comenzaremos a cocinar tu pedido.";
+      showPaymentButton = true;
+    } else if (paymentStatus === "rejected" || paymentStatus === "cancelled") {
+      statusIcon = <AlertCircle size={44} className="stroke-[1.5]" />;
+      statusColorClass = "text-red-500 bg-red-500/10 border-red-500/20";
+      statusTitle = "Pago Rechazado";
+      statusMessage = "No pudimos procesar tu pago. Podés volver a intentar pagar a continuación con otra tarjeta o medio de pago.";
+      showPaymentButton = true;
+    } else {
+      statusIcon = <CreditCard size={44} className="stroke-[1.5]" />;
+      statusColorClass = "text-orange-500 bg-orange-500/10 border-orange-500/20";
+      statusTitle = "Pedido Registrado";
+      statusMessage = "¡Buenísimo, loco! Tu pedido fue registrado. Para confirmarlo de inmediato, completá el pago online con Mercado Pago a continuación.";
+      showPaymentButton = true;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#080808] text-white py-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -69,18 +157,18 @@ export const OrderSuccessPage: React.FC = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 10 }}
-            className="w-20 h-20 bg-orange-500/10 border border-orange-500/20 text-orange-500 rounded-full flex items-center justify-center mx-auto"
+            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto border ${statusColorClass}`}
           >
-            <CheckCircle2 size={44} className="stroke-[1.5]" />
+            {statusIcon}
           </motion.div>
 
           {/* Textos principales */}
           <div className="space-y-3">
             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white">
-              ¡Pedido Confirmado!
+              {statusTitle}
             </h2>
             <p className="text-sm text-neutral-400 max-w-sm mx-auto leading-relaxed">
-              ¡Buenísimo, loco! Tu pedido ha sido ingresado al sistema. En breve nos ponemos a cocinar tu comida favorita.
+              {statusMessage}
             </p>
           </div>
 
@@ -137,14 +225,13 @@ export const OrderSuccessPage: React.FC = () => {
 
           {/* Botones de acción */}
           <div className="flex flex-col gap-3">
-            {isMercadoPago && (
+            {showPaymentButton && (
               <button
-                onClick={() => {
-                  toast.info("Redirigiendo a la pasarela de pagos simulada...");
-                }}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10 cursor-pointer text-sm uppercase tracking-wider"
+                onClick={handlePay}
+                disabled={isPaying}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-800 disabled:text-neutral-500 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/10 cursor-pointer text-sm uppercase tracking-wider animate-bounce"
               >
-                Pagar con MercadoPago
+                {isPaying ? "Conectando..." : "Pagar con MercadoPago"}
                 <ArrowRight size={15} />
               </button>
             )}

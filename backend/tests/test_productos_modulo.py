@@ -251,7 +251,7 @@ def test_actualizar_producto_con_ingredientes_y_categorias():
             unidad_medida_id=1,
             stock_actual=Decimal("5.000"),
             stock_minimo=Decimal("1.000"),
-            costo_unitario=Decimal("3.00"),
+            costo_unitario=Decimal("0.70"),
         )
         session.add(ing2)
         session.commit()

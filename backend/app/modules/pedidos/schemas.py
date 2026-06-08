@@ -22,6 +22,7 @@ class CrearPedidoRequest(SQLModel):
 class AvanzarEstadoRequest(SQLModel):
     estado_hacia: str
     motivo: Optional[str] = None
+    devolver_stock: bool = True
 
 
 # --- Responses ---

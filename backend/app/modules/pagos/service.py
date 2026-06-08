@@ -62,6 +62,18 @@ class PagoService:
                 "Content-Type": "application/json"
             }
             
+            success_url = f"{settings.FRONTEND_ORIGIN}/checkout/success"
+            failure_url = f"{settings.FRONTEND_ORIGIN}/checkout/failure"
+            pending_url = f"{settings.FRONTEND_ORIGIN}/checkout/pending"
+
+            # Mercado Pago exige que las URLs de retorno utilicen obligatoriamente HTTPS (incluso para localhost)
+            if success_url.startswith("http://"):
+                success_url = success_url.replace("http://", "https://", 1)
+            if failure_url.startswith("http://"):
+                failure_url = failure_url.replace("http://", "https://", 1)
+            if pending_url.startswith("http://"):
+                pending_url = pending_url.replace("http://", "https://", 1)
+
             payload = {
                 "items": [
                     {
@@ -73,9 +85,9 @@ class PagoService:
                 ],
                 "external_reference": external_reference,
                 "back_urls": {
-                    "success": f"{settings.FRONTEND_ORIGIN}/checkout/success",
-                    "failure": f"{settings.FRONTEND_ORIGIN}/checkout/failure",
-                    "pending": f"{settings.FRONTEND_ORIGIN}/checkout/pending"
+                    "success": success_url,
+                    "failure": failure_url,
+                    "pending": pending_url
                 },
                 "auto_return": "approved"
             }
@@ -85,6 +97,7 @@ class PagoService:
                     response = await client.post(mp_url, json=payload, headers=headers, timeout=10.0)
                 
                 if response.status_code not in [200, 201]:
+                    print(f"MERCADOPAGO ERROR RESPONSE: status={response.status_code}, body={response.text}")
                     raise HTTPException(
                         status_code=status.HTTP_502_BAD_GATEWAY,
                         detail=f"Error al conectar con MercadoPago: {response.text}"

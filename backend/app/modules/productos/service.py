@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -13,6 +14,45 @@ from app.modules.productos.schemas import (
     UnidadMedidaUpdate,
 )
 from app.modules.productos.unit_of_work import ProductoUoW
+
+
+def recalcular_producto_stock_y_precio(session: Session, producto_id: int) -> None:
+    from app.modules.ingredientes.models import Ingrediente
+    
+    producto = session.get(Producto, producto_id)
+    if not producto:
+        return
+        
+    receta = session.query(ProductoIngrediente).filter(ProductoIngrediente.producto_id == producto_id).all()
+    
+    if not receta:
+        producto.stock_cantidad = 0
+        producto.precio_base = Decimal("0.00")
+    else:
+        stocks = []
+        precio_total = Decimal("0.00")
+        for pi in receta:
+            ingrediente = session.get(Ingrediente, pi.ingrediente_id)
+            if ingrediente:
+                # Sincronizar unidad_medida_id
+                if pi.unidad_medida_id != ingrediente.unidad_medida_id:
+                    pi.unidad_medida_id = ingrediente.unidad_medida_id
+                    session.add(pi)
+                
+                stock_posible = ingrediente.stock_actual / pi.cantidad
+                stocks.append(stock_posible)
+                precio_total += ingrediente.costo_unitario * pi.cantidad
+        
+        if stocks:
+            producto.stock_cantidad = int(min(stocks))
+        else:
+            producto.stock_cantidad = 0
+        producto.precio_base = precio_total
+        
+    producto.updated_at = datetime.utcnow()
+    session.add(producto)
+    session.flush()
+
 
 
 # ─── UnidadMedidaService ──────────────────────────────────────────────────────
@@ -150,12 +190,13 @@ class ProductoService:
                         detail=f"La unidad de venta con id={data.unidad_venta_id} no existe.",
                     )
 
+            # Inicializamos precio_base y stock_cantidad en 0, se recalcularán
             producto = Producto(
                 nombre=data.nombre,
                 descripcion=data.descripcion,
-                precio_base=data.precio_base,
+                precio_base=Decimal("0.00"),
                 imagenes_url=data.imagenes_url,
-                stock_cantidad=data.stock_cantidad,
+                stock_cantidad=0,
                 disponible=data.disponible,
                 unidad_venta_id=data.unidad_venta_id,
             )
@@ -184,22 +225,19 @@ class ProductoService:
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail=f"Ingrediente con id={ing_data.ingrediente_id} no encontrado.",
                     )
-                # Validar unidad de medida del ingrediente si se proporcionó
-                if ing_data.unidad_medida_id is not None:
-                    if not uow.unidades_medida.get_by_id(ing_data.unidad_medida_id):
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"La unidad de medida con id={ing_data.unidad_medida_id} no existe.",
-                        )
                 uow.producto_ingredientes.add(
                     ProductoIngrediente(
                         producto_id=producto.id,
                         ingrediente_id=ing_data.ingrediente_id,
                         cantidad=ing_data.cantidad,
-                        unidad_medida_id=ing_data.unidad_medida_id,
+                        unidad_medida_id=ingrediente.unidad_medida_id,  # Se obtiene automáticamente del ingrediente
                         es_removible=ing_data.es_removible,
                     )
                 )
+            
+            # Forzar flush de las relaciones para poder calcular
+            self._session.flush()
+            recalcular_producto_stock_y_precio(self._session, producto.id)
 
         self._session.refresh(producto)
         return producto
@@ -258,12 +296,6 @@ class ProductoService:
                             status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Ingrediente con id={ing_data.ingrediente_id} no encontrado.",
                         )
-                    if ing_data.unidad_medida_id is not None:
-                        if not uow.unidades_medida.get_by_id(ing_data.unidad_medida_id):
-                            raise HTTPException(
-                                status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"La unidad de medida con id={ing_data.unidad_medida_id} no existe.",
-                            )
                     if ing_data.cantidad <= 0:
                         raise HTTPException(
                             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -274,16 +306,24 @@ class ProductoService:
                             producto_id=producto.id,
                             ingrediente_id=ing_data.ingrediente_id,
                             cantidad=ing_data.cantidad,
-                            unidad_medida_id=ing_data.unidad_medida_id,
+                            unidad_medida_id=ingrediente.unidad_medida_id,  # Se obtiene automáticamente del ingrediente
                             es_removible=ing_data.es_removible,
                         )
                     )
 
-            cambios = data.model_dump(exclude_unset=True, exclude={"categorias", "ingredientes"})
+            # Excluimos precio_base y stock_cantidad de la actualización directa, ya que se recalcularán automáticamente.
+            cambios = data.model_dump(
+                exclude_unset=True, 
+                exclude={"categorias", "ingredientes", "precio_base", "stock_cantidad"}
+            )
             for key, value in cambios.items():
                 setattr(producto, key, value)
             producto.updated_at = datetime.utcnow()
             uow.productos.add(producto)
+            
+            # Forzar flush y recalcular
+            self._session.flush()
+            recalcular_producto_stock_y_precio(self._session, producto.id)
 
         self._session.refresh(producto)
         return producto

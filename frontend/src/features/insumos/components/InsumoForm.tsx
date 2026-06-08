@@ -67,7 +67,6 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
       stock_actual: 0,
       stock_minimo: 0,
       costo_unitario: 0,
-      peso: null,
     },
   });
 
@@ -97,7 +96,6 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               stock_actual: insumo.stock_actual,
               stock_minimo: insumo.stock_minimo,
               costo_unitario: insumo.costo_unitario,
-              peso: insumo.peso,
             }
           : {
               nombre: "",
@@ -107,7 +105,6 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               stock_actual: 0,
               stock_minimo: 0,
               costo_unitario: 0,
-              peso: null,
             }
       );
     }
@@ -116,11 +113,11 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
   const onSubmit = async (data: IngredienteFormData) => {
     setSaving(true);
     try {
-      // Mapear unidad_medida_id a number o null, y peso a number o null
+      // Mapear unidad_medida_id a number o null, y forzar peso a null
       const mappedData: IngredienteFormData = {
         ...data,
         unidad_medida_id: data.unidad_medida_id ? Number(data.unidad_medida_id) : null,
-        peso: data.peso !== null && data.peso !== undefined && data.peso !== "" ? Number(data.peso) : null,
+        peso: null,
       };
       await onSave(mappedData);
     } finally {
@@ -131,7 +128,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        className="max-w-3xl w-full shadow-2xl rounded-2xl p-0 overflow-hidden"
+        className="sm:max-w-7xl w-[95vw] shadow-2xl rounded-2xl p-0 overflow-hidden"
         style={{
           background: "var(--tfs-card-bg)",
           border: "1px solid var(--tfs-border-mid)",
@@ -249,75 +246,47 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
                 <span className="text-xs font-bold uppercase tracking-wider">Inventario & Costos</span>
               </div>
 
-              {/* Grid: Unidad de Medida y Peso */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Unidad de Medida */}
-                <div className="space-y-2">
-                  <FieldLabel required>Unidad de Medida</FieldLabel>
-                  <Controller
-                    name="unidad_medida_id"
-                    control={control}
-                    rules={{ required: "La unidad de medida es obligatoria" }}
-                    render={({ field }) => (
-                      <select
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
-                        className={`${inputClass} cursor-pointer`}
-                        style={{
-                          ...inputStyle,
-                          color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
-                        }}
-                      >
-                        <option value="" disabled style={{ background: "var(--tfs-card-bg, #18181b)", color: "var(--tfs-text-muted, #a1a1aa)" }}>
-                          Seleccioná una unidad
+              {/* Unidad de Medida */}
+              <div className="space-y-2">
+                <FieldLabel required>Unidad de Medida</FieldLabel>
+                <Controller
+                  name="unidad_medida_id"
+                  control={control}
+                  rules={{ required: "La unidad de medida es obligatoria" }}
+                  render={({ field }) => (
+                    <select
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                      className={`${inputClass} cursor-pointer`}
+                      style={{
+                        ...inputStyle,
+                        color: field.value ? "var(--tfs-text-primary)" : "var(--tfs-text-muted)",
+                      }}
+                    >
+                      <option value="" disabled style={{ background: "var(--tfs-card-bg, #18181b)", color: "var(--tfs-text-muted, #a1a1aa)" }}>
+                        Seleccioná una unidad
+                      </option>
+                      {unidades.map((u) => (
+                        <option
+                          key={u.id}
+                          value={u.id}
+                          style={{
+                            background: "var(--tfs-card-bg, #18181b)",
+                            color: "var(--tfs-text-primary, #f4f4f5)",
+                          }}
+                        >
+                          {u.nombre} ({u.simbolo}) — {u.tipo}
                         </option>
-                        {unidades.map((u) => (
-                          <option
-                            key={u.id}
-                            value={u.id}
-                            style={{
-                              background: "var(--tfs-card-bg, #18181b)",
-                              color: "var(--tfs-text-primary, #f4f4f5)",
-                            }}
-                          >
-                            {u.nombre} ({u.simbolo}) — {u.tipo}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  />
-                  <FieldError message={errors.unidad_medida_id?.message} />
-                </div>
-
-                {/* Peso */}
-                <div className="space-y-2">
-                  <FieldLabel>Peso ({simboloSeleccionado})</FieldLabel>
-                  <Controller
-                    name="peso"
-                    control={control}
-                    rules={{
-                      min: { value: 0, message: "El peso no puede ser negativo" },
-                    }}
-                    render={({ field }) => (
-                      <input
-                        type="number"
-                        step="0.001"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
-                        placeholder="0.000"
-                        className={inputClass}
-                        style={inputStyle}
-                      />
-                    )}
-                  />
-                  <FieldError message={errors.peso?.message} />
-                </div>
+                      ))}
+                    </select>
+                  )}
+                />
+                <FieldError message={errors.unidad_medida_id?.message} />
               </div>
 
               {/* Costo Unitario */}
               <div className="space-y-2">
-                <FieldLabel required>Costo Unitario ($)</FieldLabel>
+                <FieldLabel required>Costo Unitario ($ / {simboloSeleccionado})</FieldLabel>
                 <Controller
                   name="costo_unitario"
                   control={control}
@@ -344,7 +313,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               <div className="grid grid-cols-2 gap-4">
                 {/* Stock Actual */}
                 <div className="space-y-2">
-                  <FieldLabel required>Stock Actual</FieldLabel>
+                  <FieldLabel required>Cantidad Disponible ({simboloSeleccionado})</FieldLabel>
                   <Controller
                     name="stock_actual"
                     control={control}
@@ -369,7 +338,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
 
                 {/* Stock Mínimo */}
                 <div className="space-y-2">
-                  <FieldLabel required>Stock Mínimo</FieldLabel>
+                  <FieldLabel required>Stock Mínimo ({simboloSeleccionado})</FieldLabel>
                   <Controller
                     name="stock_minimo"
                     control={control}

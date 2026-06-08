@@ -109,10 +109,14 @@ class PedidoService:
                     )
                 costo_envio = Decimal("50.00")
 
-            # 3. Procesar items, validar stock y calcular subtotal
+            # 3. Procesar items, validar stock de ingredientes y calcular subtotal
             subtotal = Decimal("0.00")
             detalles_a_crear = []
-            productos_a_actualizar = []
+            ingredientes_afectados_ids = set()
+
+            from app.modules.productos.models import ProductoIngrediente
+            from app.modules.ingredientes.models import Ingrediente
+            from app.modules.productos.service import recalcular_producto_stock_y_precio
 
             for item in data.items:
                 producto = self._session.get(Producto, item.producto_id)
@@ -122,15 +126,37 @@ class PedidoService:
                         detail=f"Producto con id={item.producto_id} no encontrado"
                     )
 
-                if producto.stock_cantidad < item.cantidad:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Stock insuficiente para el producto '{producto.nombre}' (disponible: {producto.stock_cantidad})"
-                    )
+                # Obtener ingredientes de la receta del producto
+                receta = self._session.query(ProductoIngrediente).filter(
+                    ProductoIngrediente.producto_id == producto.id
+                ).all()
 
-                # Reducir stock
-                producto.stock_cantidad -= item.cantidad
-                productos_a_actualizar.append(producto)
+                if receta:
+                    for pi in receta:
+                        ingrediente = self._session.get(Ingrediente, pi.ingrediente_id)
+                        if not ingrediente:
+                            continue
+                        
+                        cantidad_necesaria = pi.cantidad * Decimal(str(item.cantidad))
+                        if ingrediente.stock_actual < cantidad_necesaria:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Stock insuficiente del ingrediente '{ingrediente.nombre}' para preparar '{producto.nombre}' (requerido: {cantidad_necesaria}, disponible: {ingrediente.stock_actual})"
+                            )
+                        
+                        # Descontar stock del ingrediente
+                        ingrediente.stock_actual -= cantidad_necesaria
+                        self._session.add(ingrediente)
+                        ingredientes_afectados_ids.add(ingrediente.id)
+                else:
+                    # Fallback para compatibilidad con productos sin receta (como en tests previos)
+                    if producto.stock_cantidad < item.cantidad:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Stock insuficiente para el producto '{producto.nombre}' (disponible: {producto.stock_cantidad})"
+                        )
+                    producto.stock_cantidad -= item.cantidad
+                    self._session.add(producto)
 
                 # Calcular subtotal del detalle
                 precio_snap = producto.precio_base
@@ -172,9 +198,18 @@ class PedidoService:
                 det.pedido_id = pedido.id
                 uow.detalles.add(det)
 
-            # 6. Actualizar stock de productos
-            for prod in productos_a_actualizar:
-                self._session.add(prod)
+            # 6. Recalcular stock de productos afectados por la reducción de ingredientes
+            uow.flush()
+            productos_afectados = set()
+            for ing_id in ingredientes_afectados_ids:
+                pi_list = self._session.query(ProductoIngrediente).filter(
+                    ProductoIngrediente.ingrediente_id == ing_id
+                ).all()
+                for pi in pi_list:
+                    productos_afectados.add(pi.producto_id)
+            
+            for prod_id in productos_afectados:
+                recalcular_producto_stock_y_precio(self._session, prod_id)
 
             # 7. Registrar historial de estado inicial (None -> PENDIENTE)
             historial = HistorialEstadoPedido(
@@ -247,12 +282,46 @@ class PedidoService:
                         detail="El motivo de cancelación es obligatorio"
                     )
 
-                # Devolver stock
-                for det in pedido.detalles:
-                    producto = self._session.get(Producto, det.producto_id)
-                    if producto:
-                        producto.stock_cantidad += det.cantidad
-                        self._session.add(producto)
+                # Devolver stock a los ingredientes o productos si devolver_stock es True
+                if data.devolver_stock:
+                    from app.modules.productos.models import ProductoIngrediente
+                    from app.modules.ingredientes.models import Ingrediente
+                    from app.modules.productos.service import recalcular_producto_stock_y_precio
+
+                    ingredientes_modificados = set()
+                    for det in pedido.detalles:
+                        receta = self._session.query(ProductoIngrediente).filter(
+                            ProductoIngrediente.producto_id == det.producto_id
+                        ).all()
+                        if receta:
+                            for pi in receta:
+                                ingrediente = self._session.get(Ingrediente, pi.ingrediente_id)
+                                if ingrediente:
+                                    cantidad_a_devolver = pi.cantidad * Decimal(str(det.cantidad))
+                                    ingrediente.stock_actual += cantidad_a_devolver
+                                    self._session.add(ingrediente)
+                                    ingredientes_modificados.add(ingrediente.id)
+                        else:
+                            # Fallback para productos sin receta (compatibilidad con tests antiguos)
+                            producto = self._session.get(Producto, det.producto_id)
+                            if producto:
+                                producto.stock_cantidad += det.cantidad
+                                self._session.add(producto)
+                    
+                    # Flush e invalidación/recalculación de stock de productos afectados
+                    self._session.flush()
+                    
+                    if ingredientes_modificados:
+                        productos_afectados = set()
+                        for ing_id in ingredientes_modificados:
+                            pi_list = self._session.query(ProductoIngrediente).filter(
+                                ProductoIngrediente.ingrediente_id == ing_id
+                            ).all()
+                            for pi in pi_list:
+                                productos_afectados.add(pi.producto_id)
+                                
+                        for prod_id in productos_afectados:
+                            recalcular_producto_stock_y_precio(self._session, prod_id)
 
             # 4. Actualizar pedido
             pedido.estado_codigo = estado_hacia

@@ -120,10 +120,10 @@ export function PedidosAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("TODOS");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Diálogo para ingreso de motivo de cancelación
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [pendingCancelId, setPendingCancelId] = useState<number | null>(null);
+  const [devolverStock, setDevolverStock] = useState(true);
 
   // Cargando acción
   const [actionLoading, setActionLoading] = useState(false);
@@ -171,10 +171,10 @@ export function PedidosAdminPage() {
     }
   };
 
-  const handleAdvanceStatus = async (pedidoId: number, nextStatus: string, motivo?: string) => {
+  const handleAdvanceStatus = async (pedidoId: number, nextStatus: string, motivo?: string, devolverStockValue?: boolean) => {
     try {
       setActionLoading(true);
-      await avanzarEstadoPedido(pedidoId, nextStatus, motivo);
+      await avanzarEstadoPedido(pedidoId, nextStatus, motivo, devolverStockValue);
       toast.success(`Pedido #${pedidoId} actualizado a ${nextStatus}`);
       
       // Actualizar listado local
@@ -196,6 +196,7 @@ export function PedidosAdminPage() {
   const openCancelModal = (pedidoId: number) => {
     setPendingCancelId(pedidoId);
     setCancellationReason("");
+    setDevolverStock(true);
     setCancelModalOpen(true);
   };
 
@@ -207,7 +208,7 @@ export function PedidosAdminPage() {
     if (pendingCancelId === null) return;
 
     setCancelModalOpen(false);
-    await handleAdvanceStatus(pendingCancelId, "CANCELADO", cancellationReason.trim());
+    await handleAdvanceStatus(pendingCancelId, "CANCELADO", cancellationReason.trim(), devolverStock);
     setPendingCancelId(null);
   };
 
@@ -669,6 +670,24 @@ export function PedidosAdminPage() {
             <p className="text-xs text-neutral-400 leading-relaxed">
               Estás a punto de cancelar el pedido. De acuerdo a las políticas del local, esta operación devolverá el stock a los insumos y requiere obligatoriamente registrar un motivo formal.
             </p>
+
+            {/* Checkbox para reintegrar insumos */}
+            <div 
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.01] border border-white/5 transition-all hover:bg-white/[0.03] select-none cursor-pointer" 
+              onClick={() => setDevolverStock(!devolverStock)}
+            >
+              <input
+                type="checkbox"
+                id="devolver-stock-chk"
+                checked={devolverStock}
+                onChange={(e) => setDevolverStock(e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-4 h-4 rounded border-zinc-700 text-orange-500 focus:ring-orange-500/50 cursor-pointer"
+              />
+              <label htmlFor="devolver-stock-chk" className="text-xs cursor-pointer text-neutral-300">
+                Reintegrar insumos consumidos al inventario
+              </label>
+            </div>
 
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-500">

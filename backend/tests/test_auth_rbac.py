@@ -184,6 +184,42 @@ def test_roles_client_no_puede_crear_ingrediente():
     
     client.cookies.set("access_token", token)
     response = client.post("/api/v1/ingredientes/", json=payload)
-    client.cookies.clear()
-    
     assert response.status_code == 403
+
+
+def test_roles_expirados_no_se_cargan():
+    from app.modules.auth.repository import AuthRepository
+    from datetime import datetime, timedelta
+    
+    with Session(engine) as session:
+        # Creamos un usuario de prueba (ID 99)
+        test_user = Usuario(
+            id=99,
+            nombre="Temporal",
+            apellido="TFS",
+            email="temporal@test.com",
+            password_hash="hash_temp",
+            is_active=True,
+        )
+        session.add(test_user)
+        session.flush()
+        
+        # Le asignamos 3 roles:
+        # 1. CLIENT (sin fecha de expiración)
+        # 2. STOCK (expira en el futuro, +1 hora)
+        # 3. ADMIN (expira en el pasado, -1 hora)
+        now = datetime.utcnow()
+        session.add(UsuarioRol(usuario_id=test_user.id, rol_codigo="CLIENT", expires_at=None))
+        session.add(UsuarioRol(usuario_id=test_user.id, rol_codigo="STOCK", expires_at=now + timedelta(hours=1)))
+        session.add(UsuarioRol(usuario_id=test_user.id, rol_codigo="ADMIN", expires_at=now - timedelta(hours=1)))
+        session.commit()
+        
+        # Consultamos los roles a través de AuthRepository
+        repo = AuthRepository(session)
+        roles = repo.get_user_roles(test_user.id)
+        
+        # Deben retornar únicamente CLIENT y STOCK. ADMIN debe estar excluido por estar expirado.
+        assert "CLIENT" in roles
+        assert "STOCK" in roles
+        assert "ADMIN" not in roles
+

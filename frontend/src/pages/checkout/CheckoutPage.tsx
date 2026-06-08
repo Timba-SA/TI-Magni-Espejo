@@ -5,7 +5,7 @@ import { useCart } from "@/features/carrito/hooks/useCart";
 import { AddressSelector } from "@/features/checkout/components/AddressSelector";
 import { PaymentSelector } from "@/features/checkout/components/PaymentSelector";
 import { CheckoutSummary } from "@/features/checkout/components/CheckoutSummary";
-import { crearPedido } from "@/features/checkout/services/checkoutService";
+import { crearPedido, iniciarPago } from "@/features/checkout/services/checkoutService";
 import { ShoppingBag, ArrowLeft, Send, Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,10 +64,26 @@ export const CheckoutPage: React.FC = () => {
 
       const response = await crearPedido(pedidoData);
 
-      toast.success("¡Pedido creado con éxito! Disfrutá de la comida.");
-      
       // Vaciar el carrito
       clearCart();
+
+      if (formaPagoCodigo.toUpperCase() === "MERCADOPAGO") {
+        try {
+          toast.loading("Conectando con Mercado Pago...", { id: "pago-loading" });
+          const paymentInit = await iniciarPago(response.id);
+          toast.dismiss("pago-loading");
+          toast.success("¡Pedido creado! Redirigiendo al pago...");
+          // Redirigir directamente al checkout de Mercado Pago
+          window.location.href = paymentInit.init_point;
+          return;
+        } catch (payError: any) {
+          console.error("Error al iniciar pago de Mercado Pago:", payError);
+          toast.dismiss("pago-loading");
+          toast.warning("Pedido registrado, pero no pudimos conectar con Mercado Pago para pagar online. Podés pagar a continuación.");
+        }
+      } else {
+        toast.success("¡Pedido creado con éxito! Disfrutá de la comida.");
+      }
       
       // Redirigir a la página de éxito pasando el pedido en el estado de la ruta
       navigate("/checkout/success", { state: { pedido: response }, replace: true });

@@ -60,6 +60,22 @@ export function AppRouter() {
           }
         />
         <Route
+          path="/checkout/failure"
+          element={
+            <AuthProtectedRoute>
+              <OrderSuccessPage />
+            </AuthProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout/pending"
+          element={
+            <AuthProtectedRoute>
+              <OrderSuccessPage />
+            </AuthProtectedRoute>
+          }
+        />
+        <Route
           path="/perfil"
           element={
             <AuthProtectedRoute>

@@ -141,13 +141,6 @@ export function ProductoDetailModal({ open, producto, onClose }: ProductoDetailM
             }
           />
 
-          {producto.unidad_venta && (
-            <DetailRow
-              label="Unidad de Venta"
-              value={producto.unidad_venta.nombre}
-            />
-          )}
-
           {/* Ingredientes / Receta */}
           <div className="mt-4">
             <h4

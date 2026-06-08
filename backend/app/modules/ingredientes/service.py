@@ -77,8 +77,21 @@ class IngredienteService:
             for field, value in update_data.items():
                 setattr(obj, field, value)
             obj.updated_at = datetime.now(timezone.utc)
-            # update() hace flush() + refresh(). El commit lo hace __exit__ del UoW.
-            return uow.ingredientes.update(obj)
+            updated_obj = uow.ingredientes.update(obj)
+
+            # Recalcular productos que usan este ingrediente en su receta
+            from app.modules.productos.models import ProductoIngrediente
+            from app.modules.productos.service import recalcular_producto_stock_y_precio
+            
+            self._session.flush()
+            
+            recetas = self._session.query(ProductoIngrediente).filter(
+                ProductoIngrediente.ingrediente_id == id
+            ).all()
+            for r in recetas:
+                recalcular_producto_stock_y_precio(self._session, r.producto_id)
+                
+            return updated_obj
 
     def toggle_active(self, id: int) -> Ingrediente:
         """

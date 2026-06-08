@@ -16,7 +16,10 @@ class AuthRepository:
         return self.session.exec(statement).first()
 
     def get_user_roles(self, usuario_id: int) -> list[str]:
-        statement = select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == usuario_id)
+        statement = select(UsuarioRol.rol_codigo).where(
+            UsuarioRol.usuario_id == usuario_id,
+            (UsuarioRol.expires_at == None) | (UsuarioRol.expires_at > datetime.utcnow())
+        )
         return list(self.session.exec(statement).all())
 
     def get_refresh_token_by_hash(self, token_hash: str) -> Optional[RefreshToken]:
