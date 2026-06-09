@@ -52,7 +52,7 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
         </TableHeader>
         <TableBody>
           {insumos.map((insumo) => {
-            const esCritico = insumo.stock_actual <= insumo.stock_minimo && insumo.stock_minimo > 0;
+            const esCritico = Number(insumo.stock_actual) <= Number(insumo.stock_minimo) && Number(insumo.stock_minimo) > 0;
             const simboloMedida = insumo.unidad_medida?.simbolo ?? "u";
 
             return (

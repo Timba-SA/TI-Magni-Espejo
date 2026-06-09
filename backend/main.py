@@ -16,6 +16,7 @@ from app.modules.direcciones.router import router as direcciones_router
 from app.modules.pedidos.router import router as pedidos_router
 from app.modules.pagos.router import router as pagos_router
 from app.modules.admin.router import router as admin_router
+from app.modules.uploads.router import router as uploads_router
 
 
 @asynccontextmanager
@@ -64,10 +65,15 @@ app.include_router(admin_router, prefix="/api/v1")
 app.include_router(categorias_router, prefix="/api/v1")
 app.include_router(ingredientes_router, prefix="/api/v1")
 app.include_router(productos_router, prefix="/api/v1")
+app.include_router(uploads_router, prefix="/api/v1")
 
 # Dominio 3 - Gestión de Pedidos
 app.include_router(pedidos_router, prefix="/api/v1")
 app.include_router(pagos_router, prefix="/api/v1")
+
+# WebSockets Router (sin prefijo api/v1 para mantener /ws/pedidos directo)
+from app.modules.pedidos.ws_router import router as pedidos_ws_router
+app.include_router(pedidos_ws_router)
 
 
 

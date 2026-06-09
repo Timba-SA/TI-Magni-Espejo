@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     MP_ACCESS_TOKEN: Optional[str] = None
     MP_WEBHOOK_SECRET: Optional[str] = None
 
+    # Cloudinary Config
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

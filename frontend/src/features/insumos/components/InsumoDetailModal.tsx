@@ -84,7 +84,7 @@ export function InsumoDetailModal({ open, insumo, onClose }: InsumoDetailModalPr
                 <span className="font-mono font-bold">
                   {Number(insumo.stock_actual)} {insumo.unidad_medida?.simbolo ?? "u"}
                 </span>
-                {insumo.stock_actual <= insumo.stock_minimo && insumo.stock_minimo > 0 && (
+                {Number(insumo.stock_actual) <= Number(insumo.stock_minimo) && Number(insumo.stock_minimo) > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-semibold tracking-wider uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse">
                     <AlertTriangle size={8} />
                     Stock Crítico

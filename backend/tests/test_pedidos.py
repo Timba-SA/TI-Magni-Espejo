@@ -71,9 +71,8 @@ def prepare_db():
             EstadoPedido(codigo="PENDIENTE", descripcion="Pendiente de confirmación", orden=1, es_terminal=False),
             EstadoPedido(codigo="CONFIRMADO", descripcion="Confirmado", orden=2, es_terminal=False),
             EstadoPedido(codigo="EN_PREP", descripcion="En preparación", orden=3, es_terminal=False),
-            EstadoPedido(codigo="EN_CAMINO", descripcion="En camino de entrega", orden=4, es_terminal=False),
-            EstadoPedido(codigo="ENTREGADO", descripcion="Entregado satisfactoriamente", orden=5, es_terminal=True),
-            EstadoPedido(codigo="CANCELADO", descripcion="Cancelado", orden=6, es_terminal=True),
+            EstadoPedido(codigo="ENTREGADO", descripcion="Entregado satisfactoriamente", orden=4, es_terminal=True),
+            EstadoPedido(codigo="CANCELADO", descripcion="Cancelado", orden=5, es_terminal=True),
         ]
         for est in estados:
             session.add(est)
@@ -218,8 +217,8 @@ def test_avanzar_estado_invalido_fsm():
         
     current_test_user = {"sub": 2, "email": "admin@test.com", "roles": ["ADMIN"]}
     
-    # PENDIENTE a EN_CAMINO es inválido (debe pasar por CONFIRMADO -> EN_PREP primero)
-    payload = {"estado_hacia": "EN_CAMINO"}
+    # PENDIENTE a ENTREGADO es inválido (debe pasar por CONFIRMADO -> EN_PREP primero)
+    payload = {"estado_hacia": "ENTREGADO"}
     response = client.patch("/api/v1/pedidos/1/estado", json=payload)
     assert response.status_code == 400
     assert "transición" in response.json()["detail"].lower()

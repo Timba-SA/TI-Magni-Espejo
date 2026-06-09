@@ -8,3 +8,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare module 'sonner';
+declare module 'next-themes';
+declare module 'class-variance-authority';
+declare module 'react-hook-form';

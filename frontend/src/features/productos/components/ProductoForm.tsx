@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { Plus, Trash2, HelpCircle } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import type { Producto, ProductoFormData } from "../types/producto.types";
 import type { Categoria } from "@/features/categorias/types/categoria.types";
 import type { Ingrediente, UnidadMedida } from "@/features/insumos/types/insumo.types";
+import { uploadProductoImagen } from "../services/productosService";
 
 interface ProductoFormProps {
   open: boolean;
@@ -115,13 +116,18 @@ function IngredientCombobox({
                   setSearch(i.nombre);
                   setIsOpen(false);
                 }}
-                className="text-xs px-3 py-2 rounded-lg hover:bg-[#FF5A00]/10 hover:text-[#FF5A00] cursor-pointer transition-all flex items-center justify-between"
+                className="text-xs px-3 py-2 rounded-lg hover:bg-[#FF5A00]/10 hover:text-[#FF5A00] cursor-pointer transition-all flex flex-col items-start gap-0.5"
                 style={{ color: "var(--tfs-text-primary)" }}
               >
-                <span>{i.nombre}</span>
-                <span className="text-[10px] font-mono text-zinc-500 font-normal">
-                  ({i.unidad_medida?.simbolo ?? "u"})
-                </span>
+                <div className="flex justify-between w-full font-medium">
+                  <span>{i.nombre}</span>
+                  <span className="text-[10px] font-mono text-zinc-500 font-normal">
+                    ({i.unidad_medida?.simbolo ?? "u"})
+                  </span>
+                </div>
+                <div className="text-[10px] text-zinc-400 font-mono">
+                  Stock: {Number(i.stock_actual)} {i.unidad_medida?.simbolo ?? "u"} | Costo: ${Number(i.costo_unitario).toFixed(2)}
+                </div>
               </div>
             ))
           )}
@@ -136,7 +142,7 @@ export function ProductoForm({
   producto,
   categorias,
   insumos,
-  unidades,
+  unidades: _unidades,
   onClose,
   onSave,
   serverError,
@@ -150,6 +156,34 @@ export function ProductoForm({
   
   // Para manejar múltiples URLs de imagenes, usaremos un input de texto simple
   const [imagenUrlInput, setImagenUrlInput] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Por favor selecciona un archivo de imagen válido.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("La imagen supera el tamaño máximo permitido de 5MB.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setUploadError(null);
+
+    try {
+      const res = await uploadProductoImagen(file);
+      setImagenUrlInput(res.url);
+    } catch (err: any) {
+      setUploadError(err.message || "Error al subir la imagen.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const {
     control,
@@ -158,7 +192,7 @@ export function ProductoForm({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<ProductoFormData>({
+  } = useForm({
     defaultValues: {
       nombre: "",
       descripcion: "",
@@ -181,7 +215,7 @@ export function ProductoForm({
   const watchedIngredientes = watch("ingredientes") || [];
 
   // 2. Calcular precio base en tiempo real
-  const computedPrecioBase = watchedIngredientes.reduce((sum, item) => {
+  const computedPrecioBase = (watchedIngredientes as any[]).reduce((sum: number, item: any) => {
     const ingrediente = insumos.find((i) => i.id === Number(item.ingrediente_id));
     if (!ingrediente) return sum;
     return sum + (Number(ingrediente.costo_unitario) * (Number(item.cantidad) || 0));
@@ -190,7 +224,7 @@ export function ProductoForm({
   // 3. Calcular stock dinámico en tiempo real
   const computedStockCantidad = watchedIngredientes.length === 0 ? 0 : Math.floor(
     Math.min(
-      ...watchedIngredientes.map((item) => {
+      ...(watchedIngredientes as any[]).map((item: any) => {
         const ingrediente = insumos.find((i) => i.id === Number(item.ingrediente_id));
         if (!ingrediente || !item.cantidad) return 0;
         return Number(ingrediente.stock_actual) / Number(item.cantidad);
@@ -389,7 +423,7 @@ export function ProductoForm({
                   name="nombre"
                   control={control}
                   rules={{ required: "El nombre es obligatorio" }}
-                  render={({ field }) => (
+                  render={({ field }: any) => (
                     <input {...field} placeholder="Ej: Pizza Napolitana Especial" className={inputClass} style={inputStyle} />
                   )}
                 />
@@ -402,7 +436,7 @@ export function ProductoForm({
                 <Controller
                   name="descripcion"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field }: any) => (
                     <textarea
                       {...field}
                       placeholder="Ej: Pizza clásica con salsa de tomate, muzzarella, rodajas de tomate y albahaca."
@@ -455,17 +489,78 @@ export function ProductoForm({
                 </div>
               </div>
 
-              {/* Imagen URL */}
-              <div className="space-y-2">
-                <FieldLabel>URL de Imagen</FieldLabel>
-                <input
-                  type="text"
-                  value={imagenUrlInput}
-                  onChange={(e) => setImagenUrlInput(e.target.value)}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  className={inputClass}
-                  style={inputStyle}
-                />
+              {/* Imagen (URL y Subida) */}
+              <div className="space-y-3">
+                <FieldLabel>Imagen del Producto</FieldLabel>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-4 items-center">
+                  {/* Vista Previa de la Imagen */}
+                  <div
+                    className="w-[110px] h-[110px] rounded-xl flex items-center justify-center overflow-hidden border relative group bg-[var(--tfs-input-bg)]"
+                    style={{ borderColor: "var(--tfs-input-border)" }}
+                  >
+                    {imagenUrlInput ? (
+                      <>
+                        <img
+                          src={imagenUrlInput}
+                          alt="Previsualización"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setImagenUrlInput("")}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-mono"
+                        >
+                          Quitar
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-2xl text-zinc-500">🖼️</span>
+                    )}
+                  </div>
+
+                  {/* Campo de carga / URL */}
+                  <div className="space-y-2 flex-1">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={imagenUrlInput}
+                        onChange={(e) => setImagenUrlInput(e.target.value)}
+                        placeholder="Ingresa la URL o subí un archivo..."
+                        className={`${inputClass} flex-1`}
+                        style={inputStyle}
+                        disabled={uploadingImage}
+                      />
+                      
+                      <label
+                        htmlFor={uploadingImage ? undefined : "product-image-upload"}
+                        className={`flex-shrink-0 cursor-pointer h-[42px] px-4 rounded-xl flex items-center justify-center text-xs font-semibold text-white transition-all bg-[#FF5A00] hover:bg-[#e04e00] select-none ${
+                          uploadingImage ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {uploadingImage ? "Subiendo..." : "Subir archivo"}
+                      </label>
+                      <input
+                        type="file"
+                        id="product-image-upload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageFileChange}
+                        disabled={uploadingImage}
+                      />
+                    </div>
+                    
+                    <p className="text-[10px]" style={{ color: "var(--tfs-text-muted)" }}>
+                      Formatos recomendados: WEBP, PNG, JPG (máx. 5MB).
+                    </p>
+
+                    {uploadError && (
+                      <p className="text-[11px] text-red-400 mt-1">
+                        ⚠️ {uploadError}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Grid: Disponible */}
@@ -478,7 +573,7 @@ export function ProductoForm({
                   <Controller
                     name="disponible"
                     control={control}
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <input
                         type="checkbox"
                         id="disponible"
@@ -596,7 +691,7 @@ export function ProductoForm({
                     )}
                   </div>
                 ) : (
-                  fields.map((field, index) => {
+                  fields.map((field: any, index: number) => {
                     const ingId = watchedIngredientes[index]?.ingrediente_id;
                     const ingredienteSeleccionado = insumos.find((i) => i.id === Number(ingId));
                     const simboloMedida = ingredienteSeleccionado?.unidad_medida?.simbolo ?? "";
@@ -627,7 +722,7 @@ export function ProductoForm({
                               name={`ingredientes.${index}.ingrediente_id`}
                               control={control}
                               rules={{ required: true }}
-                              render={({ field: selectField }) => (
+                              render={({ field: selectField }: any) => (
                                 <IngredientCombobox
                                   value={selectField.value}
                                   onChange={selectField.onChange}
@@ -636,6 +731,14 @@ export function ProductoForm({
                               )}
                             />
                           </div>
+
+                          {/* Detalles del Insumo Seleccionado */}
+                          {ingredienteSeleccionado && (
+                            <div className="text-[11px] font-mono flex items-center justify-between px-3 py-1.5 rounded-lg border" style={{ backgroundColor: "rgba(255, 255, 255, 0.02)", borderColor: "var(--tfs-border-subtle)", color: "var(--tfs-text-muted)" }}>
+                              <span>Disponibilidad: <strong style={{ color: Number(ingredienteSeleccionado.stock_actual) <= Number(ingredienteSeleccionado.stock_minimo) && Number(ingredienteSeleccionado.stock_minimo) > 0 ? "#FF5A00" : "var(--tfs-text-primary)" }}>{Number(ingredienteSeleccionado.stock_actual)} {simboloMedida}</strong></span>
+                              <span>Costo: <strong style={{ color: "var(--tfs-text-primary)" }}>${Number(ingredienteSeleccionado.costo_unitario).toFixed(2)}</strong></span>
+                            </div>
+                          )}
 
                           {/* Grid interno: Cantidad y Unidad */}
                           <div className="grid grid-cols-2 gap-3">
@@ -648,7 +751,7 @@ export function ProductoForm({
                                   required: true,
                                   min: { value: 0.001, message: "Debe ser > 0" },
                                 }}
-                                render={({ field: qtyField }) => (
+                                render={({ field: qtyField }: any) => (
                                   <input
                                     type="number"
                                     step="0.001"
@@ -684,7 +787,7 @@ export function ProductoForm({
                           <Controller
                             name={`ingredientes.${index}.es_removible`}
                             control={control}
-                            render={({ field: chkField }) => (
+                            render={({ field: chkField }: any) => (
                               <input
                                 type="checkbox"
                                 id={`ing-removible-${index}`}

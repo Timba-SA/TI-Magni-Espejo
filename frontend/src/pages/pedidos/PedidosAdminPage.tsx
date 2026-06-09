@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { 
   ClipboardList, 
   Search, 
   AlertCircle, 
-  Eye, 
   CheckCircle2, 
   Truck, 
   XCircle, 
@@ -26,6 +25,7 @@ import { getInsumos } from "@/features/insumos/services/insumosService";
 import type { PedidoResponse } from "@/features/checkout/types/checkout.types";
 import { BackToDashboard } from "@/components/admin/BackToDashboard";
 import { toast } from "sonner";
+import { useOrderStatusWS } from "@/hooks/useOrderStatusWS";
 
 // Label para sección
 function SectionLabel({ label, code }: { label: string; code: string }) {
@@ -107,7 +107,6 @@ const getStatusBadge = (status: string) => {
 export function PedidosAdminPage() {
   const [pedidos, setPedidos] = useState<PedidoResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Detalle del pedido seleccionado
   const [selectedPedido, setSelectedPedido] = useState<PedidoDetailResponse | null>(null);
@@ -134,7 +133,6 @@ export function PedidosAdminPage() {
       const data = await listarPedidosGestion();
       setPedidos(data);
     } catch (err: any) {
-      setError("No se pudieron cargar los pedidos de gestión.");
       toast.error("Error al consultar el listado de pedidos.");
     } finally {
       setLoading(false);
@@ -158,6 +156,21 @@ export function PedidosAdminPage() {
     fetchPedidos();
     fetchIngredients();
   }, []);
+
+  // Escuchar notificaciones en tiempo real para todos los pedidos (admin/personal)
+  useOrderStatusWS({
+    onEvent: (event) => {
+      fetchPedidos();
+      if (selectedPedido) {
+        obtenerPedido(selectedPedido.id)
+          .then(setSelectedPedido)
+          .catch(() => {});
+      }
+      if (event.event === "ORDER_STATE_CHANGED") {
+        toast.info(`Pedido #${event.pedido_id.toString().padStart(4, "0")} cambió a estado ${event.estado_codigo}`);
+      }
+    }
+  });
 
   const handleSelectPedido = async (id: number) => {
     try {

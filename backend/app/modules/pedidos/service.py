@@ -19,8 +19,7 @@ class PedidoService:
     FSM = {
         "PENDIENTE": ["CONFIRMADO", "CANCELADO"],
         "CONFIRMADO": ["EN_PREP", "CANCELADO"],
-        "EN_PREP": ["EN_CAMINO", "CANCELADO"],
-        "EN_CAMINO": ["ENTREGADO"],
+        "EN_PREP": ["ENTREGADO", "CANCELADO"],
         "ENTREGADO": [],
         "CANCELADO": [],
     }
@@ -342,4 +341,22 @@ class PedidoService:
         self._session.refresh(pedido)
         _ = pedido.detalles
         _ = pedido.historial
+
+        # Emitir evento WebSocket post-commit
+        try:
+            from app.core.ws_manager import ws_manager
+            event_payload = {
+                "event": "ORDER_STATE_CHANGED",
+                "pedido_id": pedido.id,
+                "estado_codigo": pedido.estado_codigo,
+                "usuario_id": pedido.usuario_id,
+                "motivo": data.motivo or ""
+            }
+            ws_manager.broadcast_sync(f"pedido_{pedido.id}", event_payload)
+            ws_manager.broadcast_sync(f"user_{pedido.usuario_id}", event_payload)
+            ws_manager.broadcast_sync("admin", event_payload)
+        except Exception as e:
+            # Capturamos cualquier error para evitar que el fallo del WebSocket rompa la respuesta HTTP exitosa
+            print(f"Error al emitir eventos WebSocket post-commit: {e}")
+
         return pedido

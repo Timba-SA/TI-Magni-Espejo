@@ -1,7 +1,8 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, UploadFile, File, HTTPException
 from sqlmodel import Session
+from app.core.cloudinary import upload_image
 
 from app.core.database import get_session
 from app.core.dependencies import require_role
@@ -155,6 +156,29 @@ def reactivar_producto(
     _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
 ):
     return ProductoService(session).reactivar(id)
+
+
+@router.post("/productos/upload", status_code=status.HTTP_200_OK)
+def subir_imagen_producto(
+    file: UploadFile = File(...),
+    _current_user: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK")),
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo proporcionado no es una imagen válida."
+        )
+    
+    try:
+        content = file.file.read()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo leer el archivo: {str(e)}"
+        )
+        
+    secure_url = upload_image(content)
+    return {"url": secure_url}
 
 
 # ─── Ingredientes de un Producto ──────────────────────────────────────────────

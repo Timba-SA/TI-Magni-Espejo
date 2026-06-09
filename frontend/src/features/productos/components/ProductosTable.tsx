@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash2, RotateCcw, AlertCircle } from "lucide-react";
+import { Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
 import type { Producto } from "../types/producto.types";
 
 interface ProductosTableProps {

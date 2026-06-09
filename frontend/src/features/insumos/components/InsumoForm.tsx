@@ -117,6 +117,9 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
       const mappedData: IngredienteFormData = {
         ...data,
         unidad_medida_id: data.unidad_medida_id ? Number(data.unidad_medida_id) : null,
+        stock_actual: Number(data.stock_actual) || 0,
+        stock_minimo: Number(data.stock_minimo) || 0,
+        costo_unitario: Number(data.costo_unitario) || 0,
         peso: null,
       };
       await onSave(mappedData);
@@ -313,7 +316,9 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
               <div className="grid grid-cols-2 gap-4">
                 {/* Stock Actual */}
                 <div className="space-y-2">
-                  <FieldLabel required>Cantidad Disponible ({simboloSeleccionado})</FieldLabel>
+                  <FieldLabel required>
+                    {selectedUnidad ? (selectedUnidad.tipo === "masa" ? "Peso" : "Stock") : "Peso o Stock"} ({simboloSeleccionado})
+                  </FieldLabel>
                   <Controller
                     name="stock_actual"
                     control={control}
@@ -338,7 +343,9 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
 
                 {/* Stock Mínimo */}
                 <div className="space-y-2">
-                  <FieldLabel required>Stock Mínimo ({simboloSeleccionado})</FieldLabel>
+                  <FieldLabel required>
+                    {selectedUnidad ? (selectedUnidad.tipo === "masa" ? "Peso Mínimo" : "Stock Mínimo") : "Peso o Stock Mínimo"} ({simboloSeleccionado})
+                  </FieldLabel>
                   <Controller
                     name="stock_minimo"
                     control={control}

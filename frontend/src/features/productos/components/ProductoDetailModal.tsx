@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import type { Producto } from "../types/producto.types";
 
 interface ProductoDetailModalProps {
@@ -168,9 +168,14 @@ export function ProductoDetailModal({ open, producto, onClose }: ProductoDetailM
                         {prodIng.ingrediente?.nombre ?? `Insumo #${prodIng.ingrediente_id}`}
                       </p>
                       <p className="text-xs" style={{ color: "var(--tfs-text-muted)" }}>
-                        Cantidad: <span className="font-mono">{Number(prodIng.cantidad)}</span>{" "}
+                        Cantidad requerida: <span className="font-mono font-semibold" style={{ color: "var(--tfs-text-heading)" }}>{Number(prodIng.cantidad)}</span>{" "}
                         {prodIng.unidad_medida?.simbolo ?? "u"}
                       </p>
+                      {prodIng.ingrediente && (
+                        <p className="text-[11px] font-mono mt-0.5" style={{ color: "var(--tfs-text-muted)" }}>
+                          Stock actual: <span style={{ color: Number(prodIng.ingrediente.stock_actual) <= Number(prodIng.ingrediente.stock_minimo) && Number(prodIng.ingrediente.stock_minimo) > 0 ? "#FF5A00" : "var(--tfs-text-heading)" }}>{Number(prodIng.ingrediente.stock_actual)} {prodIng.unidad_medida?.simbolo ?? "u"}</span> | Costo: ${Number(prodIng.ingrediente.costo_unitario).toFixed(2)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       {prodIng.es_removible ? (

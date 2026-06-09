@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, MapPin, ShoppingBag, Edit2, Save, X, Plus, ChevronRight, Package, CreditCard, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrderStatusWS } from "@/hooks/useOrderStatusWS";
+import { toast } from "sonner";
 import {
   getMiPerfil,
   actualizarPerfil,
@@ -430,15 +432,39 @@ function PedidosSection() {
   const [direcciones, setDirecciones] = useState<Direccion[]>([]);
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<PedidoResponse | null>(null);
 
+  const fetchPedidos = useCallback(async () => {
+    try {
+      const data = await getMisPedidos();
+      setPedidos(data);
+      setPedidoSeleccionado((prev) => {
+        if (!prev) return null;
+        const updated = data.find((p) => p.id === prev.id);
+        return updated || prev;
+      });
+    } catch (err) {
+      console.error("Error al actualizar pedidos:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    getMisPedidos()
-      .then(setPedidos)
-      .finally(() => setLoading(false));
+    fetchPedidos().finally(() => setLoading(false));
 
     listarDirecciones()
       .then(setDirecciones)
       .catch(console.error);
-  }, []);
+  }, [fetchPedidos]);
+
+  // Escuchar notificaciones del estado de los pedidos por WebSockets o fallback polling
+  useOrderStatusWS({
+    onEvent: (event) => {
+      fetchPedidos();
+      if (event.event === "ORDER_STATE_CHANGED") {
+        const badge = ESTADO_BADGE[event.estado_codigo];
+        const label = badge ? badge.label : event.estado_codigo;
+        toast.success(`Pedido #${event.pedido_id.toString().padStart(4, "0")} actualizado a ${label}`);
+      }
+    }
+  });
 
   const getDireccionTexto = (id?: number) => {
     if (!id) return "Retiro en el local / Sin envío";

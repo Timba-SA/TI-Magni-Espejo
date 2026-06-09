@@ -20,7 +20,7 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   const token = getStoredToken();
 
   const defaultHeaders: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     "Accept": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };

@@ -88,3 +88,13 @@ export async function toggleAvailability(id: number, disponible: boolean): Promi
   }
 }
 
+/** Sube una imagen de producto a Cloudinary a través del backend. */
+export async function uploadProductoImagen(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return fetchApi<{ url: string }>("/productos/upload", {
+    method: "POST",
+    body: formData,
+  });
+}
