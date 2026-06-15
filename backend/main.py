@@ -18,6 +18,7 @@ from app.modules.pagos.router import router as pagos_router
 from app.modules.admin.router import router as admin_router
 from app.modules.uploads.router import router as uploads_router
 from app.modules.estadisticas.router import router as estadisticas_router
+from app.modules.pedidos.ws_router import router as pedidos_ws_router
 
 
 @asynccontextmanager
@@ -51,7 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Rate limiting global
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -73,12 +73,5 @@ app.include_router(uploads_router, prefix="/api/v1")
 app.include_router(pedidos_router, prefix="/api/v1")
 app.include_router(pagos_router, prefix="/api/v1")
 
-# WebSockets Router (sin prefijo api/v1 para mantener /ws/pedidos directo)
-from app.modules.pedidos.ws_router import router as pedidos_ws_router
+# WebSockets — sin prefijo /api/v1 para mantener /ws/pedidos directo
 app.include_router(pedidos_ws_router)
-
-
-
-@app.get("/", tags=["Health"])
-def health_check():
-    return {"status": "ok", "version": "2.0.0"}

@@ -33,7 +33,7 @@ export async function crearPedido(data: CrearPedidoRequest): Promise<PedidoRespo
 
 /** Inicia el flujo de pago con Mercado Pago creando una preferencia en el backend */
 export async function iniciarPago(pedidoId: number): Promise<{ preference_id: string; init_point: string }> {
-  const response = await axiosClient.post<{ preference_id: string; init_point: string }>("/pagos/iniciar", { pedido_id: pedidoId });
+  const response = await axiosClient.post<{ preference_id: string; init_point: string }>("/pagos/crear", { pedido_id: pedidoId });
   return response.data;
 }
 
