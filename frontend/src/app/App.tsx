@@ -6,7 +6,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppRouter />
-      <Toaster />
+      <Toaster position="top-left" />
     </ThemeProvider>
   );
 }

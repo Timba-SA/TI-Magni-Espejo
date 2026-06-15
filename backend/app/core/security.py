@@ -1,5 +1,3 @@
-import hashlib
-import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -20,18 +18,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
-
-
-# ── Refresh Token ────────────────────────────────────────────────────────────
-
-def create_refresh_token() -> str:
-    """Genera un UUID4 seguro para enviar al cliente como refresh token (plaintext)."""
-    return str(uuid.uuid4())
-
-
-def hash_refresh_token(token: str) -> str:
-    """Retorna el hash SHA-256 del token para almacenar en base de datos."""
-    return hashlib.sha256(token.encode()).hexdigest()
 
 
 # ── Access Token JWT ─────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router";
-import { LayoutDashboard, Package, LogOut, ChefHat, X, ArrowLeft, Tag, Users, ClipboardList, User } from "lucide-react";
+import { LayoutDashboard, Package, LogOut, ChefHat, X, ArrowLeft, Tag, Users, ClipboardList, User, TrendingUp } from "lucide-react";
 import type { AuthUser } from "@/features/auth/types/auth.types";
 import { getCurrentUser } from "@/features/auth/services/authService";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +17,8 @@ const ALL_NAV_ITEMS = [
   { to: "/productos",    label: "Productos",  icon: ChefHat,         code: "05", roles: ["ADMIN", "ENCARGADO"] },
   { to: "/usuarios",     label: "Usuarios",   icon: Users,           code: "04", roles: ["ADMIN"] },
   { to: "/pedidos",      label: "Pedidos",    icon: ClipboardList,   code: "06", roles: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO"] },
-  { to: "/perfil-admin", label: "Mi Perfil",  icon: User,            code: "07", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/estadisticas", label: "Estadísticas", icon: TrendingUp,     code: "08", roles: ["ADMIN"] },
+  { to: "/perfil-admin", label: "Mi Perfil",  icon: User,            code: "09", roles: ["ADMIN", "ENCARGADO"] },
 ];
 
 

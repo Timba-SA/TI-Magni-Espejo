@@ -8,6 +8,7 @@ from app.modules.pedidos.schemas import (
     FormaPagoResponse,
     PedidoResponse,
     PedidoDetailResponse,
+    HistorialEstadoResponse,
     CrearPedidoRequest,
     AvanzarEstadoRequest,
 )
@@ -69,6 +70,19 @@ def obtener_pedido(id: int, session: SessionDep, current_user: CurrentUser):
     return PedidoService(session).get_pedido(id, usuario_id, roles)
 
 
+@router.get("/{id}/historial", response_model=list[HistorialEstadoResponse], status_code=status.HTTP_200_OK)
+def obtener_historial(id: int, session: SessionDep, current_user: CurrentUser):
+    """
+    Retorna el historial completo de transiciones de estado de un pedido, ordenado ASC.
+    - ADMIN/PEDIDOS pueden ver historial de cualquier pedido.
+    - CLIENT solo puede ver el de sus propios pedidos.
+    """
+    usuario_id = current_user["sub"]
+    roles = current_user.get("roles", [])
+    pedido = PedidoService(session).get_pedido(id, usuario_id, roles)
+    return pedido.historial
+
+
 @router.patch("/{id}/estado", response_model=PedidoResponse, status_code=status.HTTP_200_OK)
 def avanzar_estado(id: int, data: AvanzarEstadoRequest, session: SessionDep, current_user: CurrentUser):
     """
@@ -76,4 +90,16 @@ def avanzar_estado(id: int, data: AvanzarEstadoRequest, session: SessionDep, cur
     """
     usuario_id = current_user["sub"]
     roles = current_user.get("roles", [])
+    return PedidoService(session).avanzar_estado(id, usuario_id, roles, data)
+
+
+@router.delete("/{id}", response_model=PedidoResponse, status_code=status.HTTP_200_OK)
+def cancelar_pedido_propio(id: int, session: SessionDep, current_user: CurrentUser):
+    """
+    Cancela el propio pedido del cliente si está en estado PENDIENTE o CONFIRMADO (RN-05).
+    Solo el propietario del pedido puede usar este endpoint.
+    """
+    usuario_id = current_user["sub"]
+    roles = current_user.get("roles", [])
+    data = AvanzarEstadoRequest(nuevo_estado="CANCELADO", motivo="Cancelado por el cliente.")
     return PedidoService(session).avanzar_estado(id, usuario_id, roles, data)

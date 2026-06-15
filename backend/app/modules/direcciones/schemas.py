@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional
 from sqlmodel import SQLModel
 
@@ -10,8 +9,6 @@ class DireccionCreateRequest(SQLModel):
     ciudad: str
     provincia: Optional[str] = None
     codigo_postal: Optional[str] = None
-    latitud: Optional[Decimal] = None
-    longitud: Optional[Decimal] = None
 
 class DireccionUpdateRequest(SQLModel):
     alias: Optional[str] = None
@@ -20,8 +17,6 @@ class DireccionUpdateRequest(SQLModel):
     ciudad: Optional[str] = None
     provincia: Optional[str] = None
     codigo_postal: Optional[str] = None
-    latitud: Optional[Decimal] = None
-    longitud: Optional[Decimal] = None
 
 class DireccionResponse(SQLModel):
     id: int
@@ -32,7 +27,5 @@ class DireccionResponse(SQLModel):
     ciudad: str
     provincia: Optional[str] = None
     codigo_postal: Optional[str] = None
-    latitud: Optional[Decimal] = None
-    longitud: Optional[Decimal] = None
     es_principal: bool
     created_at: datetime

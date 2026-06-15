@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Package, AlertTriangle, ArrowRight, LayoutDashboard, Tag, Users } from "lucide-react";
+import { Package, AlertTriangle, ArrowRight, LayoutDashboard, Tag, Users, TrendingUp } from "lucide-react";
 import { DashboardCard } from "@/components/admin/DashboardCard";
 import { getCurrentUser } from "@/features/auth/services/authService";
 import { getInsumos } from "@/features/insumos/services/insumosService";
@@ -65,6 +65,13 @@ export function DashboardPage() {
       label: "Gestión de Usuarios",
       description: "Administrá roles y visualizá todos los usuarios registrados.",
       icon: Users,
+      visibleFor: ["ADMIN"],
+    },
+    {
+      to: "/estadisticas",
+      label: "Estadísticas & Métricas",
+      description: "Ingresos, pedidos, productos más vendidos y top clientes.",
+      icon: TrendingUp,
       visibleFor: ["ADMIN"],
     },
   ].filter((m) => !user?.rol || m.visibleFor.includes(user.rol));

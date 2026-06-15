@@ -67,9 +67,7 @@ def test_crear_direccion_primera_es_principal():
         "linea2": "Piso 1 Depto B",
         "ciudad": "Springfield",
         "provincia": "Oregon",
-        "codigo_postal": "8000",
-        "latitud": -34.603722,
-        "longitud": -58.381592
+        "codigo_postal": "8000"
     }
     
     response = client.post("/api/v1/direcciones/", json=payload)

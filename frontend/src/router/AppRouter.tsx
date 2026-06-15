@@ -22,6 +22,7 @@ import { ProductosPage } from "@/pages/productos/ProductosPage";
 import { UsuariosPage } from "@/pages/usuarios/UsuariosPage";
 import { PedidosAdminPage } from "@/pages/pedidos/PedidosAdminPage";
 import { AdminProfilePage } from "@/pages/profile/AdminProfilePage";
+import { EstadisticasPage } from "@/pages/estadisticas/EstadisticasPage";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -97,6 +98,14 @@ export function AppRouter() {
         }
       >
         <Route path="/home" element={<DashboardPage />} />
+        <Route
+          path="/estadisticas"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <EstadisticasPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/insumos" element={<InsumosPage />} />
         <Route path="/categorias" element={<CategoriasPage />} />
         <Route path="/productos" element={<ProductosPage />} />

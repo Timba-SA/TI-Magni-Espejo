@@ -69,14 +69,6 @@ const getStatusBadge = (status: string) => {
         color: "#9C27B0",
         dot: "bg-purple-500 animate-pulse"
       };
-    case "EN_CAMINO":
-      return {
-        text: "En Camino",
-        bg: "rgba(0,150,136,0.1)",
-        border: "1px solid rgba(0,150,136,0.3)",
-        color: "#009688",
-        dot: "bg-teal-500"
-      };
     case "ENTREGADO":
       return {
         text: "Entregado",
@@ -272,12 +264,11 @@ export function PedidosAdminPage() {
       </div>
 
       {/* Tarjetas informativas del FSM */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Pendientes", code: "PENDIENTE", color: "border-orange-500/30 text-orange-500" },
           { label: "Confirmados", code: "CONFIRMADO", color: "border-blue-500/30 text-blue-500" },
           { label: "En Cocina", code: "EN_PREP", color: "border-purple-500/30 text-purple-500" },
-          { label: "En Camino", code: "EN_CAMINO", color: "border-teal-500/30 text-teal-500" },
           { label: "Entregados", code: "ENTREGADO", color: "border-green-500/30 text-green-500" },
           { label: "Cancelados", code: "CANCELADO", color: "border-red-500/30 text-red-500" }
         ].map((card) => (
@@ -302,7 +293,7 @@ export function PedidosAdminPage() {
       {/* Filtros e Inputs */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between pb-2">
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          {["TODOS", "PENDIENTE", "CONFIRMADO", "EN_PREP", "EN_CAMINO", "ENTREGADO", "CANCELADO"].map((st) => (
+          {["TODOS", "PENDIENTE", "CONFIRMADO", "EN_PREP", "ENTREGADO", "CANCELADO"].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -504,11 +495,11 @@ export function PedidosAdminPage() {
                   {selectedPedido.estado_codigo === "EN_PREP" && (
                     <>
                       <button
-                        onClick={() => handleAdvanceStatus(selectedPedido.id, "EN_CAMINO")}
+                        onClick={() => handleAdvanceStatus(selectedPedido.id, "ENTREGADO")}
                         disabled={actionLoading}
-                        className="flex-1 min-w-[120px] py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-all"
+                        className="flex-1 min-w-[120px] py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-all"
                       >
-                        <Truck size={14} /> Despachar Envío
+                        <Truck size={14} /> Marcar como Entregado
                       </button>
                       <button
                         onClick={() => openCancelModal(selectedPedido.id)}
@@ -518,16 +509,6 @@ export function PedidosAdminPage() {
                         <XCircle size={14} /> Cancelar
                       </button>
                     </>
-                  )}
-
-                  {selectedPedido.estado_codigo === "EN_CAMINO" && (
-                    <button
-                      onClick={() => handleAdvanceStatus(selectedPedido.id, "ENTREGADO")}
-                      disabled={actionLoading}
-                      className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                    >
-                      <CheckCircle2 size={14} /> Confirmar Entrega Final
-                    </button>
                   )}
 
                   {["ENTREGADO", "CANCELADO"].includes(selectedPedido.estado_codigo) && (

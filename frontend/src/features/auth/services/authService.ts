@@ -3,7 +3,7 @@ import { fetchApi } from "@/shared/api/apiClient";
 
 const STORAGE_KEY = "the_food_store_session";
 const TOKEN_KEY = "the_food_store_token";
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 horas (igual que JWT_EXPIRE_HOURS)
+const SESSION_DURATION_MS = 15 * 60 * 1000; // 15 minutos (igual que ACCESS_TOKEN_EXPIRE_MINUTES)
 
 interface StoredSession {
   user: AuthUser;
@@ -35,7 +35,7 @@ function clearSession(): void {
 
 export async function login(credentials: LoginCredentials): Promise<AuthUser | null> {
   try {
-    const response = await fetchApi<{ access_token: string; refresh_token: string; user: AuthUser }>(
+    const response = await fetchApi<{ access_token: string; user: AuthUser }>(
       "/auth/login",
       { 
         method: "POST", 
@@ -64,7 +64,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser | n
 
 export async function register(credentials: RegisterCredentials): Promise<AuthUser | null> {
   try {
-    const response = await fetchApi<{ access_token: string; refresh_token: string; user: AuthUser }>(
+    const response = await fetchApi<{ access_token: string; user: AuthUser }>(
       "/auth/register",
       {
         method: "POST",

@@ -34,6 +34,7 @@ class IngredienteRead(BaseModel):
     descripcion: Optional[str]
     es_alergeno: bool
     is_active: bool  # False = Inhabilitado (visible en admin con etiqueta)
+    stock_cantidad: int = 0
     unidad_medida_id: Optional[int] = None
     stock_actual: Decimal
     stock_minimo: Decimal

@@ -45,10 +45,16 @@ def migrate_ingredientes_columns():
             except Exception as e:
                 print(f"Error migrando peso: {e}")
 
+        if "stock_cantidad" not in columnas:
+            try:
+                conn.execute(text("ALTER TABLE ingredientes ADD COLUMN stock_cantidad INTEGER NOT NULL DEFAULT 0"))
+            except Exception as e:
+                print(f"Error migrando stock_cantidad: {e}")
+
 
 def create_db_and_tables():
     # Importar todos los modelos para registrarlos en SQLModel.metadata
-    from app.modules.auth.models import Rol, UsuarioRol, RefreshToken
+    from app.modules.auth.models import Rol, UsuarioRol
     from app.modules.categorias.models import Categoria
     from app.modules.direcciones.models import DireccionEntrega
     from app.modules.ingredientes.models import Ingrediente

@@ -14,7 +14,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 CurrentUser = Annotated[dict, Depends(get_current_user)]
 
 
-@router.post("/iniciar", response_model=PreferenceResponse, status_code=status.HTTP_200_OK)
+@router.post("/crear", response_model=PreferenceResponse, status_code=status.HTTP_201_CREATED)
 async def iniciar_pago(
     data: IniciarPagoRequest,
     session: SessionDep,
@@ -42,7 +42,7 @@ async def procesar_webhook(
     return {"status": "ok"}
 
 
-@router.get("/pedido/{pedido_id}", response_model=list[PagoResponse], status_code=status.HTTP_200_OK)
+@router.get("/{pedido_id}", response_model=list[PagoResponse], status_code=status.HTTP_200_OK)
 def obtener_pagos_pedido(
     pedido_id: int,
     session: SessionDep,

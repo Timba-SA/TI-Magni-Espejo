@@ -555,7 +555,7 @@ def main():
     from sqlmodel import SQLModel
 
     # Importar TODOS los modelos para que queden registrados en el metadata.
-    import app.modules.auth.models        # Rol, UsuarioRol, RefreshToken
+    import app.modules.auth.models        # Rol, UsuarioRol
     import app.modules.usuarios.models    # Usuario
     import app.modules.pedidos.models     # EstadoPedido, FormaPago
     import app.modules.productos.models   # Producto, ProductoCategoria, etc.
@@ -564,8 +564,6 @@ def main():
     import app.modules.direcciones.models  # DireccionEntrega
     import app.modules.pagos.models        # Pago
 
-    print("Dropping existing tables for a clean seed...")
-    SQLModel.metadata.drop_all(engine)
     print("Creating tables...")
     SQLModel.metadata.create_all(engine)
     

@@ -161,19 +161,22 @@ export function LoginPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 700));
 
-    let loggedUser = null;
+    try {
+      let loggedUser = null;
 
-    if (isRegistering) {
-      loggedUser = await register({ username: username, email: email, password: pass, nombre: nombre });
-      if (!loggedUser) setError("Error al registrarse. El usuario o email podría estar en uso.");
-    } else {
-      loggedUser = await login({ usernameOrEmail: username, password: pass });
-      if (!loggedUser) setError("Credenciales incorrectas. Verificá usuario y contraseña.");
-    }
+      if (isRegistering) {
+        loggedUser = await register({ username, email, password: pass, nombre });
+        if (!loggedUser) setError("Error al registrarse. El usuario o email podría estar en uso.");
+      } else {
+        loggedUser = await login({ usernameOrEmail: username, password: pass });
+        if (!loggedUser) setError("Credenciales incorrectas. Verificá usuario y contraseña.");
+      }
 
-    setLoading(false);
-    if (loggedUser) {
-      navigate("/", { replace: true });
+      if (loggedUser) navigate("/", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo conectar con el servidor. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -23,7 +23,6 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str  # Obligatorio. Sin default: la app no arranca sin esta variable.
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Seed — Administrador inicial
     ADMIN_EMAIL: str = "admin@foodstore.com"
@@ -40,6 +39,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # ignora variables desconocidas (ej: REFRESH_TOKEN_EXPIRE_DAYS residual)
 
     @property
     def database_url(self) -> str:

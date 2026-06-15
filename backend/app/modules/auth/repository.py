@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlmodel import Session, select
 
-from app.modules.auth.models import RefreshToken, UsuarioRol
+from app.modules.auth.models import UsuarioRol
 from app.modules.usuarios.models import Usuario
 
 
@@ -21,31 +21,3 @@ class AuthRepository:
             (UsuarioRol.expires_at == None) | (UsuarioRol.expires_at > datetime.utcnow())
         )
         return list(self.session.exec(statement).all())
-
-    def get_refresh_token_by_hash(self, token_hash: str) -> Optional[RefreshToken]:
-        statement = select(RefreshToken).where(
-            RefreshToken.token_hash == token_hash,
-            RefreshToken.revoked_at == None,
-        )
-        return self.session.exec(statement).first()
-
-    def create_refresh_token(
-        self,
-        usuario_id: int,
-        token_hash: str,
-        expires_at: datetime,
-    ) -> RefreshToken:
-        rt = RefreshToken(
-            token_hash=token_hash,
-            usuario_id=usuario_id,
-            expires_at=expires_at,
-        )
-        self.session.add(rt)
-        self.session.flush()
-        self.session.refresh(rt)
-        return rt
-
-    def revoke_refresh_token(self, refresh_token: RefreshToken) -> None:
-        refresh_token.revoked_at = datetime.utcnow()
-        self.session.add(refresh_token)
-        self.session.flush()

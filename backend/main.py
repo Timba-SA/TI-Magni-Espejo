@@ -17,6 +17,7 @@ from app.modules.pedidos.router import router as pedidos_router
 from app.modules.pagos.router import router as pagos_router
 from app.modules.admin.router import router as admin_router
 from app.modules.uploads.router import router as uploads_router
+from app.modules.estadisticas.router import router as estadisticas_router
 
 
 @asynccontextmanager
@@ -60,6 +61,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
 app.include_router(direcciones_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(estadisticas_router, prefix="/api/v1")
 
 # Dominio 2 - Catálogo de Productos
 app.include_router(categorias_router, prefix="/api/v1")

@@ -34,14 +34,3 @@ class UsuarioRol(SQLModel, table=True):
         sa_relationship_kwargs={"foreign_keys": "[UsuarioRol.asignado_por_id]"}
     )
 
-class RefreshToken(SQLModel, table=True):
-    __tablename__ = "refresh_tokens"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    token_hash: str = Field(max_length=64, nullable=False, unique=True)
-    expires_at: datetime = Field(nullable=False)
-    revoked_at: Optional[datetime] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
-    usuario: Optional["Usuario"] = Relationship(back_populates="refresh_tokens")

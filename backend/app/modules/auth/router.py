@@ -4,15 +4,17 @@ from sqlmodel import Session
 from app.core.database import get_session
 from app.core.dependencies import get_current_user
 from app.core.middleware import limiter
-from app.modules.auth.schemas import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
+from app.modules.auth.schemas import LoginRequest, RegisterRequest, TokenResponse
 from app.modules.auth.service import AuthService
+from app.modules.usuarios.schemas import UsuarioDetailResponse
+from app.modules.usuarios.service import UsuarioService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterRequest, response: Response, session: Session = Depends(get_session)):
-    """Registra un nuevo usuario y retorna tokens (queda logueado directamente)."""
+@limiter.limit("5/15minute")
+def register(request: Request, data: RegisterRequest, response: Response, session: Session = Depends(get_session)):
     resultado = AuthService(session).register(data)
     response.set_cookie(
         key="access_token",
@@ -25,24 +27,11 @@ def register(data: RegisterRequest, response: Response, session: Session = Depen
     )
     return resultado
 
-@router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
-@limiter.limit("10/minute")
-def login(request: Request, response: Response,data: LoginRequest, session: Session = Depends(get_session)):
-    resultado = AuthService(session).login(data)
-    response.set_cookie(
-        key="access_token",
-        value=resultado.access_token,
-        httponly=True,
-        max_age=1800,
-        samesite="lax",
-        secure=False,
-        path="/",
-    )
-    return resultado
 
-@router.post("/refresh", response_model=TokenResponse, status_code=status.HTTP_200_OK)
-def refresh(data: RefreshRequest, response: Response,session: Session = Depends(get_session)):
-    resultado = AuthService(session).refresh(data.refresh_token)
+@router.post("/login", response_model=TokenResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("5/15minute")
+def login(request: Request, response: Response, data: LoginRequest, session: Session = Depends(get_session)):
+    resultado = AuthService(session).login(data)
     response.set_cookie(
         key="access_token",
         value=resultado.access_token,
@@ -56,11 +45,11 @@ def refresh(data: RefreshRequest, response: Response,session: Session = Depends(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(
-    data: RefreshRequest, 
-    response: Response,
-    session: Session = Depends(get_session),
-    _current_user: dict = Depends(get_current_user),
-):
-    AuthService(session).logout(data.refresh_token)
+def logout(response: Response, _current_user: dict = Depends(get_current_user)):
     response.delete_cookie("access_token", path="/")
+
+
+@router.get("/me", response_model=UsuarioDetailResponse, status_code=status.HTTP_200_OK)
+def get_me(current_user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
+    usuario_id = int(current_user["sub"])
+    return UsuarioService(session).get_me(usuario_id)

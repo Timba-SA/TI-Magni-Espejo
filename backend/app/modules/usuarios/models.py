@@ -4,7 +4,7 @@ from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
-    from app.modules.auth.models import UsuarioRol, RefreshToken
+    from app.modules.auth.models import UsuarioRol
     from app.modules.direcciones.models import DireccionEntrega
 
 class Usuario(SQLModel, table=True):
@@ -26,6 +26,5 @@ class Usuario(SQLModel, table=True):
         back_populates="usuario",
         sa_relationship_kwargs={"foreign_keys": "[UsuarioRol.usuario_id]"}
     )
-    refresh_tokens: list["RefreshToken"] = Relationship(back_populates="usuario")
     direcciones: list["DireccionEntrega"] = Relationship(back_populates="usuario")
 

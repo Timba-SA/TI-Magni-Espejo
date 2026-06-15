@@ -6,7 +6,7 @@ import { AddressSelector } from "@/features/checkout/components/AddressSelector"
 import { PaymentSelector } from "@/features/checkout/components/PaymentSelector";
 import { CheckoutSummary } from "@/features/checkout/components/CheckoutSummary";
 import { crearPedido, iniciarPago } from "@/features/checkout/services/checkoutService";
-import { ShoppingBag, ArrowLeft, Send, Loader2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 export const CheckoutPage: React.FC = () => {
@@ -98,30 +98,62 @@ export const CheckoutPage: React.FC = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center text-center p-4 bg-[#080808] text-white">
+      <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center px-6">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative max-w-md w-full p-8 bg-[#0E0E0E]/80 border border-white/5 rounded-3xl backdrop-blur-xl shadow-2xl space-y-6"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-lg"
         >
-          <div className="absolute -inset-4 bg-orange-500/5 rounded-[40px] blur-2xl animate-pulse pointer-events-none" />
-          <div className="relative flex flex-col items-center space-y-4">
-            <div className="w-16 h-16 bg-neutral-900 border border-white/5 rounded-2xl flex items-center justify-center text-neutral-400">
-              <ShoppingBag size={28} className="stroke-[1.5]" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white tracking-wide">¿Carrito vacío, loco?</h2>
-              <p className="text-sm text-neutral-400 max-w-xs leading-relaxed mx-auto">
-                No tenés productos cargados para proceder al checkout. ¡Pasate por nuestra carta para ver qué se te antoja hoy!
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/menu")}
-              className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-all text-sm cursor-pointer shadow-lg shadow-white/5"
+          {/* Línea superior naranja */}
+          <div className="w-12 h-px bg-[#FF5A00] mb-10" />
+
+          {/* Etiqueta */}
+          <p
+            className="text-[9px] tracking-[0.5em] uppercase mb-4"
+            style={{ color: "rgba(255,90,0,0.6)", fontFamily: "'Space Mono', monospace" }}
+          >
+            Checkout · Sin productos
+          </p>
+
+          {/* Título editorial */}
+          <h1
+            className="text-4xl sm:text-5xl font-light leading-none tracking-tight mb-6"
+            style={{ letterSpacing: "-0.03em" }}
+          >
+            Tu selección<br />
+            <span style={{ color: "#FF5A00", fontWeight: 600 }}>está vacía.</span>
+          </h1>
+
+          <p
+            className="text-sm mb-10 max-w-sm leading-relaxed"
+            style={{ color: "rgba(255,255,255,0.4)", fontFamily: "'Space Mono', monospace" }}
+          >
+            Todavía no sumaste nada al carrito.
+            Explorá la carta y elegí lo que se te antoja.
+          </p>
+
+          {/* CTA */}
+          <button
+            onClick={() => navigate("/menu")}
+            className="group flex items-center gap-3 cursor-pointer"
+          >
+            <div
+              className="w-10 h-10 flex items-center justify-center transition-all duration-300 group-hover:bg-[#FF5A00]"
+              style={{ background: "rgba(255,90,0,0.12)", border: "1px solid rgba(255,90,0,0.3)" }}
             >
-              Explorar el Menú
-            </button>
-          </div>
+              <ArrowLeft size={14} style={{ color: "#FF5A00" }} className="group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
+            </div>
+            <span
+              className="text-xs uppercase tracking-[0.3em] transition-colors group-hover:text-white"
+              style={{ color: "rgba(255,255,255,0.5)", fontFamily: "'Space Mono', monospace" }}
+            >
+              Ver el menú
+            </span>
+          </button>
+
+          {/* Línea inferior sutil */}
+          <div className="w-full h-px mt-12" style={{ background: "rgba(255,255,255,0.05)" }} />
         </motion.div>
       </div>
     );

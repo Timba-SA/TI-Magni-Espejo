@@ -17,6 +17,7 @@ class Ingrediente(SQLModel, table=True):
     descripcion: Optional[str] = Field(default=None)
     es_alergeno: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=True, nullable=False)  # False = Inhabilitado (visible en admin)
+    stock_cantidad: int = Field(default=0, nullable=False, ge=0)
 
     unidad_medida_id: Optional[int] = Field(
         default=None,

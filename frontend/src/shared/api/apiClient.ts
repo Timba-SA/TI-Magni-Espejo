@@ -37,10 +37,16 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   if (!response.ok) {
     // 401 o 403 → token expirado o inválido / no autorizado: limpiar sesión y redirigir al login
     if (response.status === 401 || response.status === 403) {
-      handleTokenExpired();
-      const msg = response.status === 401
-        ? "Tu sesión expiró. Iniciá sesión nuevamente."
-        : "No tenés permisos para realizar esta acción.";
+      // En la pantalla de login el 401 significa credenciales incorrectas, no sesión expirada
+      const isLoginEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/register");
+      if (!isLoginEndpoint) {
+        handleTokenExpired();
+      }
+      const msg = response.status === 403
+        ? "No tenés permisos para realizar esta acción."
+        : isLoginEndpoint
+          ? "Credenciales incorrectas. Verificá usuario y contraseña."
+          : "Tu sesión expiró. Iniciá sesión nuevamente.";
       throw new Error(msg);
     }
 

@@ -24,7 +24,7 @@ const ORANGE    = "#FF5A00";
 const ESTADO_BADGE: Record<string, { label: string; color: string; bg: string }> = {
   PENDIENTE:   { label: "Pendiente",   color: "#facc15", bg: "rgba(250,204,21,0.1)"  },
   CONFIRMADO:  { label: "Confirmado",  color: "#60a5fa", bg: "rgba(96,165,250,0.1)"  },
-  EN_CAMINO:   { label: "En camino",   color: ORANGE,    bg: "rgba(255,90,0,0.1)"    },
+  EN_PREP:     { label: "En cocina",   color: "#c084fc", bg: "rgba(192,132,252,0.1)" },
   ENTREGADO:   { label: "Entregado",   color: "#4ade80", bg: "rgba(74,222,128,0.1)"  },
   CANCELADO:   { label: "Cancelado",   color: "#f87171", bg: "rgba(248,113,113,0.1)" },
 };
