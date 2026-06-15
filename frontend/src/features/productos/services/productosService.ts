@@ -47,7 +47,7 @@ export async function updateProducto(
 ): Promise<Producto | null> {
   try {
     return await fetchApi<Producto>(`/productos/${id}`, {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify(data),
     });
   } catch {
