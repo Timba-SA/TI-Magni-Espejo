@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.modules.productos.models import Producto, ProductoCategoria, ProductoIngrediente, UnidadMedida
 from app.modules.productos.schemas import (
@@ -23,7 +23,7 @@ def recalcular_producto_stock_y_precio(session: Session, producto_id: int) -> No
     if not producto:
         return
         
-    receta = session.query(ProductoIngrediente).filter(ProductoIngrediente.producto_id == producto_id).all()
+    receta = session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == producto_id)).all()
     
     if not receta:
         producto.stock_cantidad = 0
@@ -408,36 +408,6 @@ class ProductoService:
                     detail=f"Producto con id={id} no encontrado.",
                 )
             producto.deleted_at = None
-            producto.updated_at = datetime.utcnow()
-            uow.productos.add(producto)
-
-        self._session.refresh(producto)
-        return producto
-
-    def listar_ingredientes(self, producto_id: int) -> list[ProductoIngrediente]:
-        """Retorna los ingredientes asociados a un producto con sus relaciones cargadas."""
-        with ProductoUoW(self._session) as uow:
-            producto = uow.productos.get_by_id(producto_id)
-            if not producto or producto.deleted_at is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Producto con id={producto_id} no encontrado.",
-                )
-            ingredientes = list(producto.ingredientes)
-            for pi in ingredientes:
-                _ = pi.ingrediente
-        return ingredientes
-
-    def actualizar_imagenes(self, id: int, imagenes_url: list[str]) -> Producto:
-        """Reemplaza el array imagenes_url[] del producto (spec §5.2 PATCH /imagenes)."""
-        with ProductoUoW(self._session) as uow:
-            producto = uow.productos.get_by_id(id)
-            if not producto or producto.deleted_at is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Producto con id={id} no encontrado.",
-                )
-            producto.imagenes_url = imagenes_url
             producto.updated_at = datetime.utcnow()
             uow.productos.add(producto)
 

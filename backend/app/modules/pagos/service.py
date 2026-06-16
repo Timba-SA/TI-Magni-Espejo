@@ -74,15 +74,29 @@ class PagoService:
             if pending_url.startswith("http://"):
                 pending_url = pending_url.replace("http://", "https://", 1)
 
-            payload = {
-                "items": [
+            # Armar ítems reales del pedido para mostrarlos en MercadoPago
+            mp_items = [
+                {
+                    "title": detalle.nombre_snapshot,
+                    "quantity": detalle.cantidad,
+                    "unit_price": float(detalle.precio_snapshot),
+                    "currency_id": "ARS"
+                }
+                for detalle in pedido.detalles
+            ]
+            # Fallback por si el pedido llega sin detalles
+            if not mp_items:
+                mp_items = [
                     {
                         "title": f"Pedido #{pedido_id} - The Food Store",
                         "quantity": 1,
                         "unit_price": float(pedido.total),
                         "currency_id": "ARS"
                     }
-                ],
+                ]
+
+            payload = {
+                "items": mp_items,
                 "external_reference": external_reference,
                 "back_urls": {
                     "success": success_url,

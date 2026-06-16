@@ -126,9 +126,7 @@ class PedidoService:
                     )
 
                 # Obtener ingredientes de la receta del producto
-                receta = self._session.query(ProductoIngrediente).filter(
-                    ProductoIngrediente.producto_id == producto.id
-                ).all()
+                receta = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == producto.id)).all()
 
                 if receta:
                     for pi in receta:
@@ -289,9 +287,7 @@ class PedidoService:
 
                     ingredientes_modificados = set()
                     for det in pedido.detalles:
-                        receta = self._session.query(ProductoIngrediente).filter(
-                            ProductoIngrediente.producto_id == det.producto_id
-                        ).all()
+                        receta = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == det.producto_id)).all()
                         if receta:
                             for pi in receta:
                                 ingrediente = self._session.get(Ingrediente, pi.ingrediente_id)

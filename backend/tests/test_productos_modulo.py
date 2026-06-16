@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, create_engine, SQLModel
+from sqlmodel import Session, create_engine, SQLModel, select
 from sqlmodel.pool import StaticPool
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -184,7 +184,7 @@ def test_crear_producto_con_insumos_reales():
     with Session(engine) as session:
         from app.modules.productos.models import ProductoIngrediente
         # Buscar la relación de ingredientes del nuevo producto
-        pi_list = session.query(ProductoIngrediente).filter_by(producto_id=data["id"]).all()
+        pi_list = session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == data["id"])).all()
         assert len(pi_list) == 1
         assert pi_list[0].ingrediente_id == 1
         assert pi_list[0].cantidad == Decimal("150.000")
@@ -270,7 +270,7 @@ def test_actualizar_producto_con_ingredientes_y_categorias():
         ]
     }
 
-    response = client.patch("/api/v1/productos/1", json=payload)
+    response = client.put("/api/v1/productos/1", json=payload)
     assert response.status_code == 200
 
     # Verificar en base de datos directa
@@ -281,13 +281,13 @@ def test_actualizar_producto_con_ingredientes_y_categorias():
         assert db_prod.precio_base == Decimal("140.00")
 
         # Categorías asociadas
-        cats = session.query(ProductoCategoria).filter_by(producto_id=1).all()
+        cats = session.exec(select(ProductoCategoria).where(ProductoCategoria.producto_id == 1)).all()
         assert len(cats) == 1
         assert cats[0].categoria_id == 2
         assert cats[0].es_principal is True
 
         # Ingredientes asociados
-        ings = session.query(ProductoIngrediente).filter_by(producto_id=1).all()
+        ings = session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == 1)).all()
         assert len(ings) == 1
         assert ings[0].ingrediente_id == 2
         assert ings[0].cantidad == Decimal("200.000")

@@ -65,7 +65,7 @@ async def avanzar_estado(
     id: int,
     data: AvanzarEstadoRequest,
     session: SessionDep,
-    current_user: Annotated[dict, Depends(require_role("ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS"))]
+    current_user: Annotated[dict, Depends(require_role("ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS", "CLIENT", "CLIENTE"))]
 ):
     usuario_id = current_user["sub"]
     roles = current_user.get("roles", [])

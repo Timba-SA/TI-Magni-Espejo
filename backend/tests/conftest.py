@@ -22,8 +22,9 @@ from main import app
 from app.core.database import get_session
 from app.core.dependencies import get_current_user
 from app.core.security import create_access_token
-from app.modules.usuarios.models import Usuario, Rol, UsuarioRol
-from app.modules.productos.models import Producto, CategoriaProducto
+from app.modules.usuarios.models import Usuario
+from app.modules.auth.models import Rol, UsuarioRol
+from app.modules.productos.models import Producto, ProductoCategoria
 from app.modules.pedidos.models import (
     Pedido, DetallePedido, EstadoPedido, FormaPago,
 )
@@ -89,19 +90,55 @@ def _auth_headers(user_id: int, roles: list[str]) -> dict:
 
 
 @pytest.fixture()
-def admin_headers() -> dict:
-    return _auth_headers(1, ["ADMIN"])
+def admin_headers(db_session: Session) -> dict:
+    u = Usuario(
+        nombre="Admin",
+        apellido="Test",
+        email="admin_test@test.com",
+        password_hash="hashed",
+        is_active=True,
+    )
+    db_session.add(u)
+    db_session.flush()
+    db_session.refresh(u)
+    db_session.add(UsuarioRol(usuario_id=u.id, rol_codigo="ADMIN"))
+    db_session.commit()
+    return _auth_headers(u.id, ["ADMIN"])
 
 
 @pytest.fixture()
-def client_headers() -> dict:
-    return _auth_headers(2, ["CLIENTE"])
+def client_headers(db_session: Session) -> dict:
+    u = Usuario(
+        nombre="Cliente",
+        apellido="Test",
+        email="client_test@test.com",
+        password_hash="hashed",
+        is_active=True,
+    )
+    db_session.add(u)
+    db_session.flush()
+    db_session.refresh(u)
+    db_session.add(UsuarioRol(usuario_id=u.id, rol_codigo="CLIENTE"))
+    db_session.commit()
+    return _auth_headers(u.id, ["CLIENTE"])
 
 
 @pytest.fixture()
-def pedidos_headers() -> dict:
+def pedidos_headers(db_session: Session) -> dict:
     """Rol PEDIDOS — puede transicionar estados de pedido."""
-    return _auth_headers(3, ["PEDIDOS"])
+    u = Usuario(
+        nombre="Pedidos",
+        apellido="Test",
+        email="pedidos_test@test.com",
+        password_hash="hashed",
+        is_active=True,
+    )
+    db_session.add(u)
+    db_session.flush()
+    db_session.refresh(u)
+    db_session.add(UsuarioRol(usuario_id=u.id, rol_codigo="PEDIDOS"))
+    db_session.commit()
+    return _auth_headers(u.id, ["PEDIDOS"])
 
 
 # ── Factory: Producto ─────────────────────────────────────────────────────────

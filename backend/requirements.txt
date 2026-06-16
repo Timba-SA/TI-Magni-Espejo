@@ -16,4 +16,5 @@ slowapi==0.1.9
 openpyxl==3.1.2
 sqlmodel==0.0.16
 cloudinary==1.40.0
+mercadopago==2.3.0
 

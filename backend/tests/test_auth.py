@@ -13,7 +13,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.modules.usuarios.models import Usuario, UsuarioRol
+from app.modules.usuarios.models import Usuario
+from app.modules.auth.models import UsuarioRol
 from app.core.security import get_password_hash
 
 

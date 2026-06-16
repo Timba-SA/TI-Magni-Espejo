@@ -82,7 +82,7 @@ def reactivar_producto(id: int, session: SessionDep, _u: dict = Depends(require_
 @router.post("/productos/upload", status_code=status.HTTP_200_OK)
 def subir_imagen_producto(file: UploadFile = File(...), _u: dict = Depends(require_role("ADMIN", "ENCARGADO", "STOCK"))):
     if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No es una imagen valida.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo proporcionado no es una imagen válida.")
     try:
         content = file.file.read()
     except Exception as e:

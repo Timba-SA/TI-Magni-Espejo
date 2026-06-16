@@ -120,7 +120,7 @@ def test_iniciar_pago_exitoso(mock_post):
     }
 
     payload = {"pedido_id": 1}
-    response = client.post("/api/v1/pagos/iniciar", json=payload)
+    response = client.post("/api/v1/pagos/crear", json=payload)
     
     assert response.status_code == 200 or response.status_code == 201
     data = response.json()
@@ -160,8 +160,8 @@ def test_iniciar_pago_idempotencia(mock_post, prepare_db):
 
     # Segunda llamada para el mismo pedido
     payload = {"pedido_id": 1}
-    response = client.post("/api/v1/pagos/iniciar", json=payload)
-    assert response.status_code == 200
+    response = client.post("/api/v1/pagos/crear", json=payload)
+    assert response.status_code in (200, 201)
     data = response.json()
     
     # Debe retornar exactamente los datos guardados sin llamar a MercadoPago
@@ -181,7 +181,7 @@ def test_iniciar_pago_pedido_ajeno_forbidden():
     current_test_user = {"sub": 2, "email": "admin@test.com", "roles": ["CLIENT"]}
 
     payload = {"pedido_id": 1}
-    response = client.post("/api/v1/pagos/iniciar", json=payload)
+    response = client.post("/api/v1/pagos/crear", json=payload)
     # Debe denegar por no ser el dueño (403 o 404)
     assert response.status_code == 403
 

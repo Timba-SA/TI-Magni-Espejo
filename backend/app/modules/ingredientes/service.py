@@ -4,7 +4,7 @@ from typing import Optional
 
 import openpyxl
 from fastapi import HTTPException, status
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.modules.ingredientes.models import Ingrediente
 from app.modules.ingredientes.schemas import (
@@ -85,9 +85,7 @@ class IngredienteService:
             
             self._session.flush()
             
-            recetas = self._session.query(ProductoIngrediente).filter(
-                ProductoIngrediente.ingrediente_id == id
-            ).all()
+            recetas = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.ingrediente_id == id)).all()
             for r in recetas:
                 recalcular_producto_stock_y_precio(self._session, r.producto_id)
                 
