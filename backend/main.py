@@ -6,7 +6,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.core.database import create_db_and_tables
-from app.core.middleware import limiter
+from app.core.exceptions import register_exception_handlers
+from app.core.middleware import limiter, LoggingTimingMiddleware
 from app.modules.auth.router import router as auth_router
 from app.modules.categorias.router import router as categorias_router
 from app.modules.ingredientes.router import router as ingredientes_router
@@ -55,6 +56,12 @@ app.add_middleware(
 # Rate limiting global
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Exception handlers centralizados
+register_exception_handlers(app)
+
+# Logging, timing y rate limit por consola
+app.add_middleware(LoggingTimingMiddleware)
 
 # Dominio 1 - Identidad & Acceso
 app.include_router(auth_router, prefix="/api/v1")

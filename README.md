@@ -15,9 +15,9 @@
 
 [Ver video en Google Drive](https://drive.google.com/drive/folders/1oKThW0sBriSE-Z1bm6Al7ZpUczYEWy0D?usp=sharing)
 
-**Video de demostración (10-15 min):**
+**Video Integrador Final (10-15 min):**
 
-> _[Agregar link al video de demo aquí]_
+[Ver video en Google Drive](https://drive.google.com/drive/folders/1AD15_qWEuXFkNjyHWViJ2Cr98yQHWmNp?usp=sharing)
 
 ---
 

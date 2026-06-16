@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { iniciarPago } from "@/features/checkout/services/checkoutService";
 import { motion, AnimatePresence } from "motion/react";
 import { User, MapPin, ShoppingBag, Edit2, Save, X, Plus, ChevronRight, Package, CreditCard, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -741,22 +740,6 @@ function PedidosSection() {
 
               {/* Footer actions */}
               <div className="border-t border-white/5 pt-4 mt-6 flex justify-end gap-3">
-                {pedidoSeleccionado.estado_codigo === "PENDIENTE" &&
-                  pedidoSeleccionado.forma_pago_codigo === "MERCADOPAGO" && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { init_point } = await iniciarPago(pedidoSeleccionado.id);
-                        window.location.href = init_point;
-                      } catch {
-                        toast.error("No se pudo retomar el pago. Intentá de nuevo.");
-                      }
-                    }}
-                    className="px-6 py-2.5 bg-[#009EE3] hover:bg-[#007bb5] text-white font-semibold rounded-xl text-sm transition-all cursor-pointer shadow-lg"
-                  >
-                    Continuar con el pago
-                  </button>
-                )}
                 <button
                   onClick={() => setPedidoSeleccionado(null)}
                   className="px-6 py-2.5 bg-white hover:bg-neutral-200 text-black font-semibold rounded-xl text-sm transition-all cursor-pointer shadow-lg"
