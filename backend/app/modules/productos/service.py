@@ -52,7 +52,8 @@ def recalcular_producto_stock_y_precio(session: Session, producto_id: int) -> No
             producto.stock_cantidad = int(min(stocks))
         else:
             producto.stock_cantidad = 0
-        producto.precio_base = precio_total
+        margen = producto.margen_ganancia if producto.margen_ganancia else Decimal("0.00")
+        producto.precio_base = precio_total * (1 + margen / Decimal("100"))
 
     producto.updated_at = datetime.utcnow()
     prod_repo.update(producto)
@@ -203,6 +204,7 @@ class ProductoService:
                 stock_cantidad=0,
                 disponible=data.disponible,
                 unidad_venta_id=data.unidad_venta_id,
+                margen_ganancia=data.margen_ganancia,
             )
             uow.productos.add(producto)
             self._session.flush()  # genera producto.id antes del commit

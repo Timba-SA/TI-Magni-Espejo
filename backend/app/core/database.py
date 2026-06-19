@@ -52,6 +52,24 @@ def migrate_ingredientes_columns():
                 print(f"Error migrando stock_cantidad: {e}")
 
 
+def migrate_productos_columns():
+    from sqlalchemy import text, inspect
+
+    inspector = inspect(engine)
+    if not inspector.has_table("productos"):
+        return
+
+    columnas = {col["name"] for col in inspector.get_columns("productos")}
+
+    with engine.begin() as conn:
+        if "margen_ganancia" not in columnas:
+            try:
+                conn.execute(text("ALTER TABLE productos ADD COLUMN margen_ganancia NUMERIC(5,2) NOT NULL DEFAULT '0.00'"))
+                print("Columna margen_ganancia agregada a productos.")
+            except Exception as e:
+                print(f"Error migrando margen_ganancia: {e}")
+
+
 def create_db_and_tables():
     # Importar todos los modelos para registrarlos en SQLModel.metadata
     from app.modules.auth.models import Rol, UsuarioRol
@@ -68,6 +86,10 @@ def create_db_and_tables():
         migrate_ingredientes_columns()
     except Exception as e:
         print(f"Error al correr la migración manual de ingredientes: {e}")
+    try:
+        migrate_productos_columns()
+    except Exception as e:
+        print(f"Error al correr la migración manual de productos: {e}")
 
 
 def get_session():

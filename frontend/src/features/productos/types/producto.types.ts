@@ -21,6 +21,7 @@ export interface Producto {
   nombre: string;
   descripcion: string | null;
   precio_base: number;
+  margen_ganancia: number;
   imagenes_url: string[];
   stock_cantidad: number;
   disponible: boolean;
@@ -37,6 +38,7 @@ export interface ProductoFormData {
   nombre: string;
   descripcion: string;
   precio_base: number;
+  margen_ganancia: number;
   imagenes_url: string[];
   stock_cantidad: number;
   disponible: boolean;

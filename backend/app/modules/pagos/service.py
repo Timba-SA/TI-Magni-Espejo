@@ -94,6 +94,14 @@ class PagoService:
                         "currency_id": "ARS"
                     }
                 ]
+            # Agregar costo de envío como ítem separado si corresponde
+            if pedido.costo_envio and pedido.costo_envio > 0:
+                mp_items.append({
+                    "title": "Costo de envío",
+                    "quantity": 1,
+                    "unit_price": float(pedido.costo_envio),
+                    "currency_id": "ARS"
+                })
 
             payload = {
                 "items": mp_items,

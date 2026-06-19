@@ -53,6 +53,7 @@ class ProductoCreate(SQLModel):
     nombre: str
     descripcion: Optional[str] = None
     precio_base: Decimal
+    margen_ganancia: Decimal = Decimal("0.00")
     imagenes_url: list[str] = []
     stock_cantidad: int = 0
     disponible: bool = True
@@ -65,6 +66,7 @@ class ProductoUpdate(SQLModel):
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     precio_base: Optional[Decimal] = None
+    margen_ganancia: Optional[Decimal] = None
     imagenes_url: Optional[list[str]] = None
     stock_cantidad: Optional[int] = None
     disponible: Optional[bool] = None
@@ -84,6 +86,7 @@ class ProductoRead(SQLModel):
     nombre: str
     descripcion: Optional[str]
     precio_base: Decimal
+    margen_ganancia: Decimal
     imagenes_url: list[str]
     stock_cantidad: int
     disponible: bool

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { useCart } from "@/features/carrito/hooks/useCart";
-import { AddressSelector } from "@/features/checkout/components/AddressSelector";
+import { AddressSelector, type TipoEntrega } from "@/features/checkout/components/AddressSelector";
 import { PaymentSelector } from "@/features/checkout/components/PaymentSelector";
 import { CheckoutSummary } from "@/features/checkout/components/CheckoutSummary";
 import { crearPedido, iniciarPago } from "@/features/checkout/services/checkoutService";
@@ -13,6 +13,7 @@ export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { items, totalPrecio, clearCart } = useCart();
   
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("RETIRO");
   const [direccionId, setDireccionId] = useState<number | null>(null);
   const [formaPagoCodigo, setFormaPagoCodigo] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
@@ -34,7 +35,7 @@ export const CheckoutPage: React.FC = () => {
         return;
       }
 
-      if (!direccionId) {
+      if (tipoEntrega === "ENVIO" && !direccionId) {
         toast.error("Por favor, seleccioná una dirección de entrega.");
         return;
       }
@@ -178,7 +179,7 @@ export const CheckoutPage: React.FC = () => {
             Finalizar Compra
           </h2>
           <p className="text-sm text-neutral-400">
-            Completá los datos de entrega y el medio de pago para disfrutar de tu pedido.
+            Elegí cómo querés recibir tu pedido y el medio de pago.
           </p>
         </div>
 
@@ -188,10 +189,12 @@ export const CheckoutPage: React.FC = () => {
           {/* Columna Izquierda: Formulario de datos */}
           <div className="lg:col-span-7 space-y-8 bg-[#0E0E0E]/40 border border-white/5 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
             
-            {/* Selector de Dirección */}
+            {/* Selector de Modo de Entrega y Dirección */}
             <AddressSelector
               selectedId={direccionId}
               onSelect={setDireccionId}
+              tipoEntrega={tipoEntrega}
+              onTipoEntregaChange={setTipoEntrega}
             />
 
             <hr className="border-white/5" />
@@ -223,7 +226,7 @@ export const CheckoutPage: React.FC = () => {
 
           {/* Columna Derecha: Resumen de compra persistente */}
           <div className="lg:col-span-5 space-y-6">
-            <CheckoutSummary />
+            <CheckoutSummary tipoEntrega={tipoEntrega} />
 
             {/* Botón de confirmación */}
             <button
@@ -239,7 +242,7 @@ export const CheckoutPage: React.FC = () => {
               ) : (
                 <>
                   <Send size={16} />
-                  Realizar Pedido — {formatCurrency(totalPrecio)}
+                  Realizar Pedido — {formatCurrency(totalPrecio + (tipoEntrega === "ENVIO" ? 50 : 0))}
                 </>
               )}
             </button>

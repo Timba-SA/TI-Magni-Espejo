@@ -149,6 +149,7 @@ export function ProductoForm({
 }: ProductoFormProps) {
   const isEditing = !!producto;
   const [saving, setSaving] = useState(false);
+  const [margenGanancia, setMargenGanancia] = useState<number>(0);
 
   // Estados locales para manejar la selección de categorías de forma robusta
   const [selectedCategorias, setSelectedCategorias] = useState<{ [key: number]: boolean }>({});
@@ -214,12 +215,15 @@ export function ProductoForm({
   // 1. Observar ingredientes de la receta en tiempo real
   const watchedIngredientes = watch("ingredientes") || [];
 
-  // 2. Calcular precio base en tiempo real
-  const computedPrecioBase = (watchedIngredientes as any[]).reduce((sum: number, item: any) => {
+  // 2. Calcular costo de insumos en tiempo real
+  const computedCosto = (watchedIngredientes as any[]).reduce((sum: number, item: any) => {
     const ingrediente = insumos.find((i) => i.id === Number(item.ingrediente_id));
     if (!ingrediente) return sum;
     return sum + (Number(ingrediente.costo_unitario) * (Number(item.cantidad) || 0));
   }, 0);
+
+  // 2b. Precio de venta = costo * (1 + margen / 100)
+  const computedPrecioBase = computedCosto * (1 + (margenGanancia || 0) / 100);
 
   // 3. Calcular stock dinámico en tiempo real
   const computedStockCantidad = watchedIngredientes.length === 0 ? 0 : Math.floor(
@@ -276,6 +280,7 @@ export function ProductoForm({
 
         // Setear input de imagen
         setImagenUrlInput(producto.imagenes_url?.[0] ?? "");
+        setMargenGanancia(Number(producto.margen_ganancia) ?? 0);
       } else {
         reset({
           nombre: "",
@@ -291,6 +296,7 @@ export function ProductoForm({
         setSelectedCategorias({});
         setCategoriaPrincipalId(null);
         setImagenUrlInput("");
+        setMargenGanancia(0);
       }
     }
   }, [open, producto, reset]);
@@ -347,10 +353,11 @@ export function ProductoForm({
         nombre: data.nombre,
         descripcion: data.descripcion || "",
         precio_base: computedPrecioBase,
+        margen_ganancia: margenGanancia,
         imagenes_url: finalImagenes,
         stock_cantidad: computedStockCantidad,
         disponible: !!data.disponible,
-        unidad_venta_id: null, // Sin unidad de venta
+        unidad_venta_id: null,
         categorias: finalCategorias,
         ingredientes: finalIngredientes,
       };
@@ -448,11 +455,11 @@ export function ProductoForm({
                 />
               </div>
 
-              {/* Grid: Precio y Stock */}
+              {/* Grid: Costo, Margen y Stock */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Precio Base */}
+                {/* Costo de insumos */}
                 <div className="space-y-2">
-                  <FieldLabel>Precio Base (Calculado)</FieldLabel>
+                  <FieldLabel>Costo de Insumos</FieldLabel>
                   <div
                     className={`${inputClass} select-none flex items-center font-mono font-bold h-10`}
                     style={{
@@ -462,7 +469,7 @@ export function ProductoForm({
                       opacity: 0.8,
                     }}
                   >
-                    $ {computedPrecioBase.toFixed(2)}
+                    $ {computedCosto.toFixed(2)}
                   </div>
                   <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
                     Suma del costo de la receta
@@ -485,6 +492,55 @@ export function ProductoForm({
                   </div>
                   <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
                     Mínimo stock de insumos receta
+                  </p>
+                </div>
+              </div>
+
+              {/* Margen de ganancia + Precio de venta */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Input de margen */}
+                <div className="space-y-2">
+                  <FieldLabel required>Margen de Ganancia (%)</FieldLabel>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={999}
+                      step={1}
+                      value={margenGanancia}
+                      onChange={(e) => setMargenGanancia(Math.max(0, Number(e.target.value)))}
+                      placeholder="Ej: 30"
+                      className={`${inputClass} h-10 pr-10`}
+                      style={inputStyle}
+                    />
+                    <span
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold pointer-events-none"
+                      style={{ color: "#FF5A00" }}
+                    >
+                      %
+                    </span>
+                  </div>
+                  <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
+                    Porcentaje sobre el costo
+                  </p>
+                </div>
+
+                {/* Precio de venta resultante */}
+                <div className="space-y-2">
+                  <FieldLabel>Precio de Venta</FieldLabel>
+                  <div
+                    className={`${inputClass} select-none flex items-center font-mono font-bold h-10`}
+                    style={{
+                      ...inputStyle,
+                      background: "rgba(255,90,0,0.04)",
+                      borderColor: "rgba(255,90,0,0.3)",
+                      color: "#FF5A00",
+                    }}
+                  >
+                    $ {computedPrecioBase.toFixed(2)}
+                  </div>
+                  <p className="text-[9px]" style={{ color: "var(--tfs-text-muted)" }}>
+                    Costo × (1 + margen)
                   </p>
                 </div>
               </div>

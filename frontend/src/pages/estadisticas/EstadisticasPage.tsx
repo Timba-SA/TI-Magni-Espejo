@@ -3,12 +3,9 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { TrendingUp, ShoppingBag, Users, DollarSign, Calendar, Loader2 } from "lucide-react";
+import { TrendingUp, ShoppingBag, Users, DollarSign, Loader2 } from "lucide-react";
 import { getMetricasDashboard, type DashboardMetrics } from "@/features/estadisticas/services/estadisticasService";
-import { MOCK_METRICS } from "@/features/estadisticas/services/estadisticasMock";
 import { BackToDashboard } from "@/components/admin/BackToDashboard";
-
-const USE_MOCK = false;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionLabel({ label, code }: { label: string; code: string }) {
@@ -147,14 +144,9 @@ export function EstadisticasPage() {
       setLoading(true);
       setError(null);
       try {
-        if (USE_MOCK) {
-          await new Promise((r) => setTimeout(r, 400)); // simula latencia
-          setData(MOCK_METRICS);
-        } else {
-          const fechaInicio = daysAgo(RANGOS[rangoIdx].days);
-          const result = await getMetricasDashboard(fechaInicio);
-          setData(result);
-        }
+        const fechaInicio = daysAgo(RANGOS[rangoIdx].days);
+        const result = await getMetricasDashboard(fechaInicio);
+        setData(result);
       } catch {
         setError("No se pudieron cargar las métricas.");
       } finally {

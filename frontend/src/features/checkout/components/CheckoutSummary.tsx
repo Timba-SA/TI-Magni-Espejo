@@ -1,9 +1,15 @@
 import React from "react";
 import { useCart } from "@/features/carrito/hooks/useCart";
 import { ShoppingBag } from "lucide-react";
+import type { TipoEntrega } from "./AddressSelector";
 
-export const CheckoutSummary: React.FC = () => {
+interface CheckoutSummaryProps {
+  tipoEntrega: TipoEntrega;
+}
+
+export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({ tipoEntrega }) => {
   const { items, totalPrecio } = useCart();
+  const costoEnvio = tipoEntrega === "ENVIO" ? 50 : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("es-AR", {
@@ -99,7 +105,11 @@ export const CheckoutSummary: React.FC = () => {
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-neutral-400">Costo de envío</span>
-          <span className="font-semibold text-neutral-400 italic text-xs">A confirmar</span>
+          {tipoEntrega === "RETIRO" ? (
+            <span className="font-semibold text-green-400 text-xs">Gratis</span>
+          ) : (
+            <span className="font-semibold text-white">{formatCurrency(costoEnvio)}</span>
+          )}
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-neutral-400">Descuento</span>
@@ -108,7 +118,7 @@ export const CheckoutSummary: React.FC = () => {
         <div className="flex justify-between items-center border-t border-white/5 pt-4">
           <span className="text-base font-bold text-white">Total estimado</span>
           <span className="text-lg font-black text-orange-500">
-            {formatCurrency(totalPrecio)}
+            {formatCurrency(totalPrecio + costoEnvio)}
           </span>
         </div>
       </div>

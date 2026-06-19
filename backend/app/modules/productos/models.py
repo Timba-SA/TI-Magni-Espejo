@@ -113,6 +113,13 @@ class Producto(SQLModel, table=True):
         default_factory=list,
         sa_column=Column(JSON, nullable=False),
     )
+    margen_ganancia: Decimal = Field(
+        default=Decimal("0.00"),
+        decimal_places=2,
+        max_digits=5,
+        nullable=False,
+        ge=0,
+    )
     stock_cantidad: int = Field(default=0, nullable=False, ge=0)
     disponible: bool = Field(default=True, nullable=False)
 
