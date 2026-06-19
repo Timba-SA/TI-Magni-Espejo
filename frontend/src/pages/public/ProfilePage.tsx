@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { User, MapPin, ShoppingBag, Edit2, Save, X, Plus, ChevronRight, Package, CreditCard, MessageSquare } from "lucide-react";
+import { User, MapPin, ShoppingBag, Edit2, Save, X, Plus, ChevronRight, Package, CreditCard, MessageSquare, Star, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrderStatusWS } from "@/hooks/useOrderStatusWS";
 import { toast } from "sonner";
@@ -15,6 +15,11 @@ import {
   type Direccion,
   type PedidoResponse,
 } from "@/features/profile/services/profileService";
+import {
+  actualizarDireccion,
+  setPrincipalDireccion,
+  eliminarDireccion,
+} from "@/features/checkout/services/checkoutService";
 
 // ─── Constantes de estilo ─────────────────────────────────────────────────────
 const CORMORANT = "'Cormorant Garamond', 'Playfair Display', serif";
@@ -248,16 +253,26 @@ function DatosPersonalesSection({ perfil, onUpdate }: {
 }
 
 // ─── Sección: Mis Direcciones ─────────────────────────────────────────────────
+const EMPTY_FORM = { alias: "", linea1: "", linea2: "", ciudad: "", provincia: "", codigo_postal: "" };
+
 function DireccionesSection() {
-  const [direcciones, setDirecciones]   = useState<Direccion[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [showForm, setShowForm]         = useState(false);
-  const [saving, setSaving]             = useState(false);
-  const [feedback, setFeedback]         = useState<string | null>(null);
-  const [form, setForm] = useState({
-    alias: "", linea1: "", linea2: "",
-    ciudad: "", provincia: "", codigo_postal: "",
-  });
+  const [direcciones, setDirecciones] = useState<Direccion[]>([]);
+  const [loading, setLoading]         = useState(true);
+
+  // Formulario nueva dirección
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newForm, setNewForm]         = useState(EMPTY_FORM);
+  const [newSaving, setNewSaving]     = useState(false);
+  const [newError, setNewError]       = useState<string | null>(null);
+
+  // Dirección siendo editada inline
+  const [editingId, setEditingId]     = useState<number | null>(null);
+  const [editForm, setEditForm]       = useState(EMPTY_FORM);
+  const [editSaving, setEditSaving]   = useState(false);
+  const [editError, setEditError]     = useState<string | null>(null);
+
+  // Acciones puntuales
+  const [actionId, setActionId]       = useState<number | null>(null); // id con spinner
 
   useEffect(() => {
     listarDirecciones()
@@ -265,32 +280,106 @@ function DireccionesSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleAddDireccion = async () => {
-    if (!form.linea1.trim() || !form.ciudad.trim()) {
-      setFeedback("Calle y ciudad son obligatorios.");
+  // ── Agregar ────────────────────────────────────────────────────────────────
+  const handleAdd = async () => {
+    if (!newForm.linea1.trim() || !newForm.ciudad.trim()) {
+      setNewError("Calle y ciudad son obligatorios.");
       return;
     }
-    setSaving(true);
-    setFeedback(null);
+    setNewSaving(true);
+    setNewError(null);
     try {
       const nueva = await crearDireccion({
-        alias:         form.alias     || undefined,
-        linea1:        form.linea1,
-        linea2:        form.linea2    || undefined,
-        ciudad:        form.ciudad,
-        provincia:     form.provincia || undefined,
-        codigo_postal: form.codigo_postal || undefined,
+        alias:         newForm.alias         || undefined,
+        linea1:        newForm.linea1,
+        linea2:        newForm.linea2        || undefined,
+        ciudad:        newForm.ciudad,
+        provincia:     newForm.provincia     || undefined,
+        codigo_postal: newForm.codigo_postal || undefined,
       });
       setDirecciones((prev) => [...prev, nueva]);
-      setShowForm(false);
-      setForm({ alias: "", linea1: "", linea2: "", ciudad: "", provincia: "", codigo_postal: "" });
-    } catch {
-      setFeedback("No se pudo guardar la dirección.");
+      setShowNewForm(false);
+      setNewForm(EMPTY_FORM);
+      toast.success("Dirección agregada.");
+    } catch (err: any) {
+      setNewError(err.message || "No se pudo guardar la dirección.");
     } finally {
-      setSaving(false);
+      setNewSaving(false);
     }
   };
 
+  // ── Abrir edición ──────────────────────────────────────────────────────────
+  const startEdit = (d: Direccion) => {
+    setEditingId(d.id);
+    setEditForm({
+      alias:         d.alias         ?? "",
+      linea1:        d.linea1,
+      linea2:        d.linea2        ?? "",
+      ciudad:        d.ciudad,
+      provincia:     d.provincia     ?? "",
+      codigo_postal: d.codigo_postal ?? "",
+    });
+    setEditError(null);
+  };
+
+  // ── Guardar edición ────────────────────────────────────────────────────────
+  const handleEdit = async (id: number) => {
+    if (!editForm.linea1.trim() || !editForm.ciudad.trim()) {
+      setEditError("Calle y ciudad son obligatorios.");
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const updated = await actualizarDireccion(id, {
+        alias:         editForm.alias         || undefined,
+        linea1:        editForm.linea1,
+        linea2:        editForm.linea2        || undefined,
+        ciudad:        editForm.ciudad,
+        provincia:     editForm.provincia     || undefined,
+        codigo_postal: editForm.codigo_postal || undefined,
+      });
+      setDirecciones((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      setEditingId(null);
+      toast.success("Dirección actualizada.");
+    } catch (err: any) {
+      setEditError(err.message || "No se pudo actualizar la dirección.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // ── Marcar como principal ──────────────────────────────────────────────────
+  const handleSetPrincipal = async (id: number) => {
+    setActionId(id);
+    try {
+      const updated = await setPrincipalDireccion(id);
+      setDirecciones((prev) =>
+        prev.map((d) => ({ ...d, es_principal: d.id === id ? updated.es_principal : false }))
+      );
+      toast.success("Dirección marcada como principal.");
+    } catch (err: any) {
+      toast.error(err.message || "No se pudo cambiar la dirección principal.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  // ── Eliminar ───────────────────────────────────────────────────────────────
+  const handleDelete = async (id: number) => {
+    setActionId(id);
+    try {
+      await eliminarDireccion(id);
+      setDirecciones((prev) => prev.filter((d) => d.id !== id));
+      toast.info("Dirección eliminada.");
+    } catch (err: any) {
+      toast.error(err.message || "No se pudo eliminar la dirección.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -305,7 +394,7 @@ function DireccionesSection() {
           Mis Direcciones
         </h3>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => { setShowNewForm((v) => !v); setNewError(null); setNewForm(EMPTY_FORM); }}
           style={{
             fontFamily: MONO, fontSize: "10px", letterSpacing: "0.3em",
             textTransform: "uppercase", color: "rgba(255,90,0,0.6)",
@@ -321,7 +410,7 @@ function DireccionesSection() {
 
       {/* Formulario nueva dirección */}
       <AnimatePresence>
-        {showForm && (
+        {showNewForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -332,32 +421,28 @@ function DireccionesSection() {
               className="mb-6 p-5 grid grid-cols-1 md:grid-cols-2 gap-4"
               style={{ border: "1px solid rgba(255,90,0,0.15)", background: "rgba(255,90,0,0.03)" }}
             >
-              <ProfileInput label="Alias (ej: Casa)" value={form.alias} onChange={(v) => setForm((f) => ({ ...f, alias: v }))} placeholder="Opcional" />
-              <ProfileInput label="Calle y número *" value={form.linea1} onChange={(v) => setForm((f) => ({ ...f, linea1: v }))} placeholder="Av. Corrientes 1234" />
-              <ProfileInput label="Piso / Depto" value={form.linea2} onChange={(v) => setForm((f) => ({ ...f, linea2: v }))} placeholder="Opcional" />
-              <ProfileInput label="Ciudad *" value={form.ciudad} onChange={(v) => setForm((f) => ({ ...f, ciudad: v }))} placeholder="Buenos Aires" />
-              <ProfileInput label="Provincia" value={form.provincia} onChange={(v) => setForm((f) => ({ ...f, provincia: v }))} placeholder="CABA" />
-              <ProfileInput label="Código Postal" value={form.codigo_postal} onChange={(v) => setForm((f) => ({ ...f, codigo_postal: v }))} placeholder="1000" />
-
-              {feedback && (
-                <p style={{ gridColumn: "1 / -1", fontFamily: MONO, fontSize: "11px", color: "#f87171" }}>
-                  {feedback}
-                </p>
+              <ProfileInput label="Alias (ej: Casa)" value={newForm.alias} onChange={(v) => setNewForm((f) => ({ ...f, alias: v }))} placeholder="Opcional" />
+              <ProfileInput label="Calle y número *" value={newForm.linea1} onChange={(v) => setNewForm((f) => ({ ...f, linea1: v }))} placeholder="Av. Corrientes 1234" />
+              <ProfileInput label="Piso / Depto" value={newForm.linea2} onChange={(v) => setNewForm((f) => ({ ...f, linea2: v }))} placeholder="Opcional" />
+              <ProfileInput label="Ciudad *" value={newForm.ciudad} onChange={(v) => setNewForm((f) => ({ ...f, ciudad: v }))} placeholder="Buenos Aires" />
+              <ProfileInput label="Provincia" value={newForm.provincia} onChange={(v) => setNewForm((f) => ({ ...f, provincia: v }))} placeholder="CABA" />
+              <ProfileInput label="Código Postal" value={newForm.codigo_postal} onChange={(v) => setNewForm((f) => ({ ...f, codigo_postal: v }))} placeholder="1000" />
+              {newError && (
+                <p style={{ gridColumn: "1 / -1", fontFamily: MONO, fontSize: "11px", color: "#f87171" }}>{newError}</p>
               )}
-
               <div className="flex gap-2" style={{ gridColumn: "1 / -1" }}>
                 <button
-                  onClick={() => { setShowForm(false); setFeedback(null); }}
+                  onClick={() => { setShowNewForm(false); setNewError(null); }}
                   style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 16px" }}
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={handleAddDireccion}
-                  disabled={saving}
-                  style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "#080808", background: saving ? "#999" : ORANGE, padding: "8px 18px", border: "none" }}
+                  onClick={handleAdd}
+                  disabled={newSaving}
+                  style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "#080808", background: newSaving ? "#999" : ORANGE, padding: "8px 18px", border: "none" }}
                 >
-                  {saving ? "Guardando..." : "Agregar dirección"}
+                  {newSaving ? "Guardando..." : "Agregar dirección"}
                 </button>
               </div>
             </div>
@@ -382,45 +467,154 @@ function DireccionesSection() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {direcciones.map((d) => (
-            <motion.div
-              key={d.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              style={{
-                padding: "14px 18px",
-                border: d.es_principal
-                  ? "1px solid rgba(255,90,0,0.3)"
-                  : "1px solid rgba(255,255,255,0.06)",
-                background: d.es_principal ? "rgba(255,90,0,0.04)" : "rgba(255,255,255,0.02)",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-              }}
-            >
-              <MapPin size={15} style={{ color: d.es_principal ? ORANGE : "rgba(255,255,255,0.3)", marginTop: 2, flexShrink: 0 }} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  {d.alias && (
-                    <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,90,0,0.6)" }}>
-                      {d.alias}
-                    </span>
-                  )}
-                  {d.es_principal && (
-                    <span style={{ fontFamily: MONO, fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: ORANGE, background: "rgba(255,90,0,0.12)", padding: "1px 6px" }}>
-                      Principal
-                    </span>
-                  )}
+          <AnimatePresence initial={false}>
+            {direcciones.map((d) => (
+              <motion.div
+                key={d.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                layout
+              >
+                {/* Tarjeta */}
+                <div
+                  style={{
+                    padding: "14px 18px",
+                    border: d.es_principal
+                      ? "1px solid rgba(255,90,0,0.3)"
+                      : "1px solid rgba(255,255,255,0.06)",
+                    background: d.es_principal ? "rgba(255,90,0,0.04)" : "rgba(255,255,255,0.02)",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                  }}
+                >
+                  <MapPin size={15} style={{ color: d.es_principal ? ORANGE : "rgba(255,255,255,0.3)", marginTop: 2, flexShrink: 0 }} />
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      {d.alias && (
+                        <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,90,0,0.6)" }}>
+                          {d.alias}
+                        </span>
+                      )}
+                      {d.es_principal && (
+                        <span style={{ fontFamily: MONO, fontSize: "9px", letterSpacing: "0.2em", textTransform: "uppercase", color: ORANGE, background: "rgba(255,90,0,0.12)", padding: "1px 6px" }}>
+                          Principal
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.7)", letterSpacing: "0.02em" }}>
+                      {d.linea1}{d.linea2 ? `, ${d.linea2}` : ""}
+                    </p>
+                    <p style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.02em", marginTop: 2 }}>
+                      {d.ciudad}{d.provincia ? `, ${d.provincia}` : ""}{d.codigo_postal ? ` (${d.codigo_postal})` : ""}
+                    </p>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Editar */}
+                    <button
+                      onClick={() => editingId === d.id ? setEditingId(null) : startEdit(d)}
+                      title="Editar dirección"
+                      style={{
+                        padding: "6px", border: "1px solid rgba(255,255,255,0.08)",
+                        background: editingId === d.id ? "rgba(255,90,0,0.15)" : "rgba(255,255,255,0.03)",
+                        color: editingId === d.id ? ORANGE : "rgba(255,255,255,0.4)",
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = ORANGE; }}
+                      onMouseLeave={(e) => { if (editingId !== d.id) e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+                    >
+                      <Edit2 size={13} />
+                    </button>
+
+                    {/* Marcar como principal */}
+                    {!d.es_principal && (
+                      <button
+                        onClick={() => handleSetPrincipal(d.id)}
+                        disabled={actionId === d.id}
+                        title="Marcar como principal"
+                        style={{
+                          padding: "6px", border: "1px solid rgba(255,255,255,0.08)",
+                          background: "rgba(255,255,255,0.03)",
+                          color: "rgba(255,255,255,0.4)",
+                          cursor: "pointer", transition: "all 0.15s",
+                          opacity: actionId === d.id ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "#facc15"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+                      >
+                        <Star size={13} />
+                      </button>
+                    )}
+
+                    {/* Eliminar */}
+                    <button
+                      onClick={() => handleDelete(d.id)}
+                      disabled={actionId === d.id}
+                      title="Eliminar dirección"
+                      style={{
+                        padding: "6px", border: "1px solid rgba(255,255,255,0.08)",
+                        background: "rgba(255,255,255,0.03)",
+                        color: "rgba(255,255,255,0.4)",
+                        cursor: "pointer", transition: "all 0.15s",
+                        opacity: actionId === d.id ? 0.5 : 1,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "#f87171"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
-                <p style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.7)", letterSpacing: "0.02em" }}>
-                  {d.linea1}{d.linea2 ? `, ${d.linea2}` : ""}
-                </p>
-                <p style={{ fontFamily: MONO, fontSize: "11px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.02em", marginTop: 2 }}>
-                  {d.ciudad}{d.provincia ? `, ${d.provincia}` : ""}{d.codigo_postal ? ` (${d.codigo_postal})` : ""}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+
+                {/* Formulario de edición inline */}
+                <AnimatePresence>
+                  {editingId === d.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      style={{ overflow: "hidden" }}
+                    >
+                      <div
+                        className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4"
+                        style={{ border: "1px solid rgba(255,90,0,0.15)", borderTop: "none", background: "rgba(255,90,0,0.02)" }}
+                      >
+                        <ProfileInput label="Alias" value={editForm.alias} onChange={(v) => setEditForm((f) => ({ ...f, alias: v }))} placeholder="Opcional" />
+                        <ProfileInput label="Calle y número *" value={editForm.linea1} onChange={(v) => setEditForm((f) => ({ ...f, linea1: v }))} />
+                        <ProfileInput label="Piso / Depto" value={editForm.linea2} onChange={(v) => setEditForm((f) => ({ ...f, linea2: v }))} placeholder="Opcional" />
+                        <ProfileInput label="Ciudad *" value={editForm.ciudad} onChange={(v) => setEditForm((f) => ({ ...f, ciudad: v }))} />
+                        <ProfileInput label="Provincia" value={editForm.provincia} onChange={(v) => setEditForm((f) => ({ ...f, provincia: v }))} />
+                        <ProfileInput label="Código Postal" value={editForm.codigo_postal} onChange={(v) => setEditForm((f) => ({ ...f, codigo_postal: v }))} />
+                        {editError && (
+                          <p style={{ gridColumn: "1 / -1", fontFamily: MONO, fontSize: "11px", color: "#f87171" }}>{editError}</p>
+                        )}
+                        <div className="flex gap-2" style={{ gridColumn: "1 / -1" }}>
+                          <button
+                            onClick={() => { setEditingId(null); setEditError(null); }}
+                            style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.1)", padding: "8px 16px" }}
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={() => handleEdit(d.id)}
+                            disabled={editSaving}
+                            style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "#080808", background: editSaving ? "#999" : ORANGE, padding: "8px 18px", border: "none" }}
+                          >
+                            <Save size={11} className="inline mr-1" />
+                            {editSaving ? "Guardando..." : "Guardar cambios"}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>

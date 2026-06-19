@@ -20,6 +20,15 @@ export interface DireccionCreateRequest {
   codigo_postal?: string;
 }
 
+export interface DireccionUpdateRequest {
+  alias?: string;
+  linea1?: string;
+  linea2?: string;
+  ciudad?: string;
+  provincia?: string;
+  codigo_postal?: string;
+}
+
 export interface FormaPago {
   codigo: string;
   descripcion: string;

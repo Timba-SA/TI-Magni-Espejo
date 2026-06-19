@@ -2,6 +2,7 @@ import { fetchApi } from "@/shared/api/apiClient";
 import type {
   Direccion,
   DireccionCreateRequest,
+  DireccionUpdateRequest,
   FormaPago,
   CrearPedidoRequest,
   PedidoResponse,
@@ -17,6 +18,28 @@ export async function crearDireccion(data: DireccionCreateRequest): Promise<Dire
   return fetchApi<Direccion>("/direcciones/", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+/** Actualiza los datos de una dirección del usuario autenticado */
+export async function actualizarDireccion(id: number, data: DireccionUpdateRequest): Promise<Direccion> {
+  return fetchApi<Direccion>(`/direcciones/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+/** Establece una dirección como la principal del usuario autenticado */
+export async function setPrincipalDireccion(id: number): Promise<Direccion> {
+  return fetchApi<Direccion>(`/direcciones/${id}/principal`, {
+    method: "PATCH",
+  });
+}
+
+/** Elimina (soft delete) una dirección del usuario autenticado */
+export async function eliminarDireccion(id: number): Promise<void> {
+  return fetchApi<void>(`/direcciones/${id}`, {
+    method: "DELETE",
   });
 }
 
