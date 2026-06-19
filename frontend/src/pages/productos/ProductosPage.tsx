@@ -6,13 +6,13 @@ import { ProductosTable } from "@/features/productos/components/ProductosTable";
 import { ProductoForm } from "@/features/productos/components/ProductoForm";
 import { ProductoDetailModal } from "@/features/productos/components/ProductoDetailModal";
 import {
-  getProductos,
-  createProducto,
-  updateProducto,
-  deleteProducto,
-  reactivarProducto,
-  toggleAvailability,
-} from "@/features/productos/services/productosService";
+  useProductosQuery,
+  useProductoCreateMutation,
+  useProductoUpdateMutation,
+  useProductoDeleteMutation,
+  useProductoReactivateMutation,
+  useProductoToggleAvailabilityMutation,
+} from "@/features/productos/hooks/useProductosQuery";
 import { getCategorias } from "@/features/categorias/services/categoriasService";
 import { getInsumos, getUnidadesMedida } from "@/features/insumos/services/insumosService";
 import { BackToDashboard } from "@/components/admin/BackToDashboard";
@@ -57,7 +57,7 @@ function ConfirmArchiveModal({
         </h3>
         <p className="text-sm mb-6" style={{ color: "var(--tfs-text-muted)" }}>
           Se dará de baja lógicamente{" "}
-          <span className="font-semibold" style={{ color: "var(--tfs-text-heading)" }}>{producto.nombre}</span>. 
+          <span className="font-semibold" style={{ color: "var(--tfs-text-heading)" }}>{producto.nombre}</span>.
           Dejará de estar disponible en el catálogo público de manera inmediata.
         </p>
         <div className="flex gap-3">
@@ -78,133 +78,109 @@ export function ProductosPage() {
   const user = getCurrentUser();
   const isAdmin = user?.roles?.includes("ADMIN") ?? user?.rol === "ADMIN";
 
-  const [productos, setProductos] = useState<Producto[]>([]);
+  // Form lookup data (loaded once — not reactive, only needed for dropdowns)
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [insumos, setInsumos] = useState<Ingrediente[]>([]);
   const [unidades, setUnidades] = useState<UnidadMedida[]>([]);
-  
-  const [loading, setLoading] = useState(true);
+  const [formDataLoading, setFormDataLoading] = useState(true);
+
   const [filters, setFilters] = useState<ProductoFiltersState>(EMPTY_FILTERS);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Estados de modales
+  // Modal state
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
-  // Seleccionados
   const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null);
   const [productoToArchive, setProductoToArchive] = useState<Producto | null>(null);
 
-  // Paginación local
+  // Pagination
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(20);
 
-  // Carga inicial
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // Cargar todos los lookups en paralelo, sin que uno solo falle todo
-      const [catsResult, insResult, unisResult, prodsResult] = await Promise.allSettled([
-        getCategorias(0, 100),
-        getInsumos(0, 100, "", false, false),
-        getUnidadesMedida(),
-        getProductos(0, 500, undefined, true),
-      ]);
+  // Reactive product list via TanStack Query
+  const { data: productos = [], isLoading: productosLoading } = useProductosQuery();
 
-      if (catsResult.status === "fulfilled") setCategorias(catsResult.value.items);
-      else console.error("Error cargando categorías:", catsResult.reason);
+  // Mutations
+  const createMutation = useProductoCreateMutation();
+  const updateMutation = useProductoUpdateMutation();
+  const deleteMutation = useProductoDeleteMutation();
+  const reactivateMutation = useProductoReactivateMutation();
+  const toggleAvailabilityMutation = useProductoToggleAvailabilityMutation();
 
-      if (insResult.status === "fulfilled") setInsumos(insResult.value.items);
-      else console.error("Error cargando insumos:", insResult.reason);
-
-      if (unisResult.status === "fulfilled") setUnidades(unisResult.value);
-      else console.error("Error cargando unidades:", unisResult.reason);
-
-      if (prodsResult.status === "fulfilled") setProductos(prodsResult.value);
-      else console.error("Error cargando productos:", prodsResult.reason);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load form lookup data once on mount
   useEffect(() => {
-    loadData();
+    async function loadFormData() {
+      setFormDataLoading(true);
+      try {
+        const [catsResult, insResult, unisResult] = await Promise.allSettled([
+          getCategorias(0, 100),
+          getInsumos(0, 100, "", false, false),
+          getUnidadesMedida(),
+        ]);
+
+        if (catsResult.status === "fulfilled") setCategorias(catsResult.value.items);
+        else console.error("Error cargando categorías:", catsResult.reason);
+
+        if (insResult.status === "fulfilled") setInsumos(insResult.value.items);
+        else console.error("Error cargando insumos:", insResult.reason);
+
+        if (unisResult.status === "fulfilled") setUnidades(unisResult.value);
+        else console.error("Error cargando unidades:", unisResult.reason);
+      } finally {
+        setFormDataLoading(false);
+      }
+    }
+    loadFormData();
   }, []);
 
-  // Reset de página al cambiar filtros
+  // Reset pagination when filters change
   useEffect(() => {
     setSkip(0);
   }, [filters.search, filters.categoriaId, filters.mostrarArchivados]);
 
-  // Filtrado de productos en memoria para máxima velocidad y evitar lag de red
   const filteredProductos = useMemo(() => {
     return productos.filter((prod) => {
-      // Filtro por archivados
       const esArchivado = prod.deleted_at !== null;
-      if (!filters.mostrarArchivados && esArchivado) {
-        return false;
-      }
+      if (!filters.mostrarArchivados && esArchivado) return false;
 
-      // Filtro por búsqueda de texto
       if (filters.search.trim()) {
         const query = filters.search.toLowerCase();
         const matchesNombre = prod.nombre.toLowerCase().includes(query);
         const matchesDesc = prod.descripcion?.toLowerCase().includes(query) ?? false;
         const matchesId = prod.id.toString() === query;
-        if (!matchesNombre && !matchesDesc && !matchesId) {
-          return false;
-        }
+        if (!matchesNombre && !matchesDesc && !matchesId) return false;
       }
 
-      // Filtro por categoría
       if (filters.categoriaId) {
         const catId = Number(filters.categoriaId);
-        const tieneCat = prod.categorias.some((c) => c.categoria_id === catId);
-        if (!tieneCat) {
-          return false;
-        }
+        if (!prod.categorias.some((c) => c.categoria_id === catId)) return false;
       }
 
       return true;
     });
   }, [productos, filters]);
 
-  // Paginación local sobre la lista filtrada
-  const paginatedProductos = useMemo(() => {
-    return filteredProductos.slice(skip, skip + limit);
-  }, [filteredProductos, skip, limit]);
+  const paginatedProductos = useMemo(
+    () => filteredProductos.slice(skip, skip + limit),
+    [filteredProductos, skip, limit]
+  );
 
-  // Handlers CRUD
-  const handleCreate = () => {
-    setSaveError(null);
-    setSelectedProducto(null);
-    setFormOpen(true);
-  };
+  const loading = productosLoading || formDataLoading;
 
-  const handleEdit = (prod: Producto) => {
-    setSaveError(null);
-    setSelectedProducto(prod);
-    setFormOpen(true);
-  };
-
-  const handleView = (prod: Producto) => {
-    setSelectedProducto(prod);
-    setDetailOpen(true);
-  };
-
-  const handleArchiveRequest = (prod: Producto) => {
-    setProductoToArchive(prod);
-    setArchiveOpen(true);
-  };
+  // Handlers
+  const handleCreate = () => { setSaveError(null); setSelectedProducto(null); setFormOpen(true); };
+  const handleEdit = (prod: Producto) => { setSaveError(null); setSelectedProducto(prod); setFormOpen(true); };
+  const handleView = (prod: Producto) => { setSelectedProducto(prod); setDetailOpen(true); };
+  const handleArchiveRequest = (prod: Producto) => { setProductoToArchive(prod); setArchiveOpen(true); };
 
   const handleConfirmArchive = async () => {
     if (productoToArchive) {
-      const success = await deleteProducto(productoToArchive.id);
-      if (success) {
-        // Recargar productos
-        const prodsRes = await getProductos(0, 500, undefined, true);
-        setProductos(prodsRes);
+      try {
+        await deleteMutation.mutateAsync(productoToArchive.id);
+      } catch (err) {
+        console.error("Error archivando producto:", err);
       }
       setProductoToArchive(null);
       setArchiveOpen(false);
@@ -212,21 +188,18 @@ export function ProductosPage() {
   };
 
   const handleReactivate = async (prod: Producto) => {
-    const updated = await reactivarProducto(prod.id);
-    if (updated) {
-      // Recargar productos
-      const prodsRes = await getProductos(0, 500, undefined, true);
-      setProductos(prodsRes);
+    try {
+      await reactivateMutation.mutateAsync(prod.id);
+    } catch (err) {
+      console.error("Error reactivando producto:", err);
     }
   };
 
   const handleToggleAvailability = async (prod: Producto) => {
-    const updated = await toggleAvailability(prod.id, !prod.disponible);
-    if (updated) {
-      // Actualizar en el estado local directamente
-      setProductos((prev) =>
-        prev.map((p) => (p.id === prod.id ? { ...p, disponible: updated.disponible } : p))
-      );
+    try {
+      await toggleAvailabilityMutation.mutateAsync({ id: prod.id, disponible: !prod.disponible });
+    } catch (err) {
+      console.error("Error toggling disponibilidad:", err);
     }
   };
 
@@ -234,18 +207,11 @@ export function ProductosPage() {
     setSaveError(null);
     try {
       if (selectedProducto) {
-        const updated = await updateProducto(selectedProducto.id, formData);
-        if (!updated) {
-          throw new Error("No se pudo actualizar el producto");
-        }
+        const updated = await updateMutation.mutateAsync({ id: selectedProducto.id, data: formData });
+        if (!updated) throw new Error("No se pudo actualizar el producto");
       } else {
-        await createProducto(formData);
+        await createMutation.mutateAsync(formData);
       }
-      
-      // Recargar productos
-      const prodsRes = await getProductos(0, 500, undefined, true);
-      setProductos(prodsRes);
-      
       setFormOpen(false);
       setSelectedProducto(null);
     } catch (err: unknown) {
@@ -342,7 +308,7 @@ export function ProductosPage() {
               onToggleAvailability={handleToggleAvailability}
               isAdmin={isAdmin}
             />
-            
+
             <div className="p-4" style={{ borderTop: "1px solid var(--tfs-divider)" }}>
               <DataTablePagination
                 skip={skip}

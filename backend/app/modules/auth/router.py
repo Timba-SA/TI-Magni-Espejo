@@ -3,8 +3,9 @@ from sqlmodel import Session
 
 from app.core.database import get_session
 from app.core.dependencies import get_current_user
+from app.core.security import create_access_token
 from app.core.middleware import limiter
-from app.modules.auth.schemas import LoginRequest, RegisterRequest, TokenResponse
+from app.modules.auth.schemas import LoginRequest, RegisterRequest, TokenResponse, RefreshResponse
 from app.modules.auth.service import AuthService
 from app.modules.usuarios.schemas import UsuarioDetailResponse
 from app.modules.usuarios.service import UsuarioService
@@ -42,6 +43,25 @@ def login(request: Request, response: Response, data: LoginRequest, session: Ses
         path="/",
     )
     return resultado
+
+
+@router.post("/refresh", response_model=RefreshResponse, status_code=status.HTTP_200_OK)
+def refresh_token(response: Response, current_user: dict = Depends(get_current_user)):
+    new_token = create_access_token({
+        "sub": str(current_user["sub"]),
+        "email": current_user["email"],
+        "roles": current_user.get("roles", []),
+    })
+    response.set_cookie(
+        key="access_token",
+        value=new_token,
+        httponly=True,
+        max_age=900,
+        samesite="lax",
+        secure=False,
+        path="/",
+    )
+    return RefreshResponse(access_token=new_token)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

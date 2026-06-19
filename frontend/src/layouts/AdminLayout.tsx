@@ -7,6 +7,7 @@ import {
   getSessionRemainingMs,
 } from "@/features/auth/services/authService";
 import { useAuth } from "@/hooks/useAuth";
+import { useSessionRefresh } from "@/hooks/useSessionRefresh";
 
 const CHECK_INTERVAL_MS = 60_000; // chequea cada 1 minuto
 
@@ -15,6 +16,7 @@ export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  useSessionRefresh();
 
   // ─── Auto-logout al expirar la sesión ──────────────────────────────────────
   useEffect(() => {

@@ -117,3 +117,21 @@ export function getSessionRemainingMs(): number {
   return session.expiresAt - Date.now();
 }
 
+export async function refreshSession(): Promise<boolean> {
+  try {
+    const response = await fetchApi<{ access_token: string }>("/auth/refresh", { method: "POST" });
+    if (response?.access_token) {
+      localStorage.setItem(TOKEN_KEY, response.access_token);
+      const session = loadSession();
+      if (session) {
+        session.expiresAt = Date.now() + SESSION_DURATION_MS;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      }
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+

@@ -18,3 +18,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: dict[str, Any]
+
+
+class RefreshResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

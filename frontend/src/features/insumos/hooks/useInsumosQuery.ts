@@ -56,6 +56,7 @@ export const useInsumoUpdateMutation = () => {
     mutationFn: ({ id, data }) => updateInsumo(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["insumos"] });
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
     },
   });
 };
