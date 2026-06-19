@@ -43,6 +43,11 @@ class BaseRepository(Generic[ModelType]):
         self.session.add(obj)
         self.session.flush()
 
+    def mark_dirty(self, obj: ModelType) -> None:
+        """Marca el objeto como modificado en la sesión sin hacer flush.
+        Útil para operaciones en batch donde el flush se hace explícitamente después."""
+        self.session.add(obj)
+
     def hard_delete(self, obj: ModelType) -> None:
         """Elimina el registro físicamente de la base de datos. Usar con precaución."""
         self.session.delete(obj)

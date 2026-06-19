@@ -253,7 +253,7 @@ class PagoService:
             if mp_status == "approved":
                 pedido_service = PedidoService(self._session)
                 # Obtenemos el pedido para recuperar el usuario dueño del pedido
-                pedido = self._session.get(Pedido, pago.pedido_id) if hasattr(pago, "pedido_id") else None
+                pedido = uow.pedidos.get_by_id(pago.pedido_id) if hasattr(pago, "pedido_id") else None
                 if not pedido:
                     # Alternativa por las dudas
                     pedido_id_num = int(external_reference.replace("pedido_", ""))

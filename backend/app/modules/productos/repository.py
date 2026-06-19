@@ -116,6 +116,13 @@ class ProductoIngredienteRepository(BaseRepository[ProductoIngrediente]):
             )
         ).all()
 
+    def get_by_ingrediente(self, ingrediente_id: int) -> list[ProductoIngrediente]:
+        return self.session.exec(
+            select(ProductoIngrediente).where(
+                ProductoIngrediente.ingrediente_id == ingrediente_id
+            )
+        ).all()
+
     def delete_by_producto(self, producto_id: int) -> None:
         rows = self.get_by_producto(producto_id)
         for row in rows:

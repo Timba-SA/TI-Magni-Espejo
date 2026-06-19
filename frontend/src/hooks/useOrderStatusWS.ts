@@ -74,13 +74,19 @@ export function useOrderStatusWS({ pedidoId, onEvent }: UseOrderStatusWSOptions 
       setStatus("DISCONNECTED");
       socketRef.current = null;
 
+      // Código 4001 = token expirado o inválido — no tiene sentido reconectar
+      if (event.code === 4001) {
+        console.warn("[WS] Token inválido o expirado. Se cancela la reconexión automática.");
+        return;
+      }
+
       // Re-intentar con backoff exponencial
       const attempt = reconnectAttemptRef.current;
       const delay = Math.min(30000, 1000 * Math.pow(2, attempt));
       console.log(`[WS] Intentando reconectar en ${delay}ms... (Intento ${attempt + 1})`);
-      
+
       reconnectAttemptRef.current += 1;
-      
+
       reconnectTimeoutRef.current = setTimeout(() => {
         connect();
       }, delay);

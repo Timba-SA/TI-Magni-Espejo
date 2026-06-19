@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from "react-router";
 import { LayoutDashboard, Package, LogOut, ChefHat, X, ArrowLeft, Tag, Users, ClipboardList, User, TrendingUp } from "lucide-react";
 import type { AuthUser } from "@/features/auth/types/auth.types";
-import { getCurrentUser } from "@/features/auth/services/authService";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AdminSidebarProps {
@@ -11,23 +10,23 @@ interface AdminSidebarProps {
 }
 
 const ALL_NAV_ITEMS = [
-  { to: "/home",         label: "Dashboard",  icon: LayoutDashboard, code: "01", roles: ["ADMIN", "ENCARGADO"] },
-  { to: "/insumos",      label: "Insumos",    icon: Package,         code: "02", roles: ["ADMIN", "ENCARGADO"] },
-  { to: "/categorias",   label: "Categorías", icon: Tag,             code: "03", roles: ["ADMIN", "ENCARGADO"] },
-  { to: "/productos",    label: "Productos",  icon: ChefHat,         code: "05", roles: ["ADMIN", "ENCARGADO"] },
-  { to: "/usuarios",     label: "Usuarios",   icon: Users,           code: "04", roles: ["ADMIN"] },
-  { to: "/pedidos",      label: "Pedidos",    icon: ClipboardList,   code: "06", roles: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO"] },
-  { to: "/estadisticas", label: "Estadísticas", icon: TrendingUp,     code: "08", roles: ["ADMIN"] },
-  { to: "/perfil-admin", label: "Mi Perfil",  icon: User,            code: "09", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/home",         label: "Dashboard",    icon: LayoutDashboard, code: "01", roles: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS", "STOCK"] },
+  { to: "/pedidos",      label: "Pedidos",      icon: ClipboardList,   code: "06", roles: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS"] },
+  { to: "/insumos",      label: "Insumos",      icon: Package,         code: "02", roles: ["ADMIN", "ENCARGADO", "STOCK"] },
+  { to: "/categorias",   label: "Categorías",   icon: Tag,             code: "03", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/productos",    label: "Productos",    icon: ChefHat,         code: "05", roles: ["ADMIN", "ENCARGADO"] },
+  { to: "/usuarios",     label: "Usuarios",     icon: Users,           code: "04", roles: ["ADMIN"] },
+  { to: "/estadisticas", label: "Estadísticas", icon: TrendingUp,      code: "08", roles: ["ADMIN"] },
+  { to: "/perfil-admin", label: "Mi Perfil",    icon: User,            code: "09", roles: ["ADMIN", "ENCARGADO"] },
 ];
 
 
 export function AdminSidebar({ user, isOpen, onClose }: AdminSidebarProps) {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const currentUser = getCurrentUser();
+  const userRoles = user.roles ?? [user.rol];
   const NAV_ITEMS = ALL_NAV_ITEMS.filter(
-    (item) => !currentUser || item.roles.includes(currentUser.rol)
+    (item) => userRoles.some((r) => item.roles.includes(r))
   );
 
   const handleLogout = () => {

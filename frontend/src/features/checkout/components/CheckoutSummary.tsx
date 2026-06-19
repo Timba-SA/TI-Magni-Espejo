@@ -12,8 +12,8 @@ export const CheckoutSummary: React.FC = () => {
     }).format(value);
   };
 
-  const costoEnvio = items.length > 0 ? 350 : 0; // Costo de envío simulado
-  const totalConEnvio = totalPrecio + costoEnvio;
+  // El costo de envío real lo calcula el backend al crear el pedido
+  // ($50 con dirección, $0 retiro en local). Acá se muestra como estimado.
 
   return (
     <div className="bg-[#0E0E0E]/80 border border-white/5 rounded-3xl p-6 backdrop-blur-xl shadow-2xl flex flex-col space-y-6">
@@ -99,16 +99,16 @@ export const CheckoutSummary: React.FC = () => {
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-neutral-400">Costo de envío</span>
-          <span className="font-semibold text-white">{formatCurrency(costoEnvio)}</span>
+          <span className="font-semibold text-neutral-400 italic text-xs">A confirmar</span>
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-neutral-400">Descuento</span>
           <span className="font-semibold text-green-500">-$ 0,00</span>
         </div>
         <div className="flex justify-between items-center border-t border-white/5 pt-4">
-          <span className="text-base font-bold text-white">Total</span>
+          <span className="text-base font-bold text-white">Total estimado</span>
           <span className="text-lg font-black text-orange-500">
-            {formatCurrency(totalConEnvio)}
+            {formatCurrency(totalPrecio)}
           </span>
         </div>
       </div>

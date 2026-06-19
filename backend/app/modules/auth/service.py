@@ -72,6 +72,7 @@ class AuthService:
                 "apellido": nuevo.apellido,
                 "email": nuevo.email,
                 "rol": get_primary_role(roles),
+                "roles": roles,
             },
         )
 
@@ -106,5 +107,6 @@ class AuthService:
                 "apellido": user.apellido,
                 "email": user.email,
                 "rol": get_primary_role(roles),
+                "roles": roles,
             }
         )

@@ -76,7 +76,7 @@ function ConfirmArchiveModal({
 // ─── Página principal de Productos ───────────────────────────────────────────
 export function ProductosPage() {
   const user = getCurrentUser();
-  const isAdmin = user?.rol === "ADMIN";
+  const isAdmin = user?.roles?.includes("ADMIN") ?? user?.rol === "ADMIN";
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);

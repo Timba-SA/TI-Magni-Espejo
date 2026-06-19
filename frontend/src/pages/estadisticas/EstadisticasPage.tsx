@@ -8,7 +8,7 @@ import { getMetricasDashboard, type DashboardMetrics } from "@/features/estadist
 import { MOCK_METRICS } from "@/features/estadisticas/services/estadisticasMock";
 import { BackToDashboard } from "@/components/admin/BackToDashboard";
 
-const USE_MOCK = true; // ← cambiar a false cuando el backend tenga datos reales
+const USE_MOCK = false;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionLabel({ label, code }: { label: string; code: string }) {

@@ -4,7 +4,7 @@ from typing import Optional
 
 import openpyxl
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.modules.ingredientes.models import Ingrediente
 from app.modules.ingredientes.schemas import (
@@ -80,15 +80,12 @@ class IngredienteService:
             updated_obj = uow.ingredientes.update(obj)
 
             # Recalcular productos que usan este ingrediente en su receta
-            from app.modules.productos.models import ProductoIngrediente
             from app.modules.productos.service import recalcular_producto_stock_y_precio
-            
-            self._session.flush()
-            
-            recetas = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.ingrediente_id == id)).all()
+
+            recetas = uow.producto_ingredientes.get_by_ingrediente(id)
             for r in recetas:
                 recalcular_producto_stock_y_precio(self._session, r.producto_id)
-                
+
             return updated_obj
 
     def toggle_active(self, id: int) -> Ingrediente:

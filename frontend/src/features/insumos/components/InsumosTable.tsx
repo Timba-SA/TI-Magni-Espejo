@@ -23,7 +23,6 @@ export function InsumosTable({ insumos, onView, onEdit, onDelete, onToggleActive
   if (insumos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-4xl mb-4">🧂</p>
         <p className="text-sm" style={{ color: "var(--tfs-text-muted)" }}>
           No se encontraron ingredientes con los filtros aplicados.
         </p>

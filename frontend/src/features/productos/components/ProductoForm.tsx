@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Image, AlertTriangle, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -515,7 +515,7 @@ export function ProductoForm({
                         </button>
                       </>
                     ) : (
-                      <span className="text-2xl text-zinc-500">🖼️</span>
+                      <Image size={24} className="text-zinc-500" />
                     )}
                   </div>
 
@@ -556,7 +556,7 @@ export function ProductoForm({
 
                     {uploadError && (
                       <p className="text-[11px] text-red-400 mt-1">
-                        ⚠️ {uploadError}
+                        {uploadError}
                       </p>
                     )}
                   </div>
@@ -669,7 +669,7 @@ export function ProductoForm({
               <div className="flex-1 space-y-3 overflow-y-auto max-h-[460px] pr-1">
                 {fields.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center border border-dashed rounded-xl" style={{ borderColor: "var(--tfs-input-border)" }}>
-                    <p className="text-2xl mb-1.5">{insumos.length === 0 ? "⚠️" : "🧂"}</p>
+                    <div className="mb-1.5">{insumos.length === 0 ? <AlertTriangle size={24} className="text-amber-500 mx-auto" /> : <Package size={24} className="text-zinc-500 mx-auto" />}</div>
                     {insumos.length === 0 ? (
                       <>
                         <p className="text-xs font-semibold" style={{ color: "var(--tfs-text-primary)" }}>
@@ -815,7 +815,7 @@ export function ProductoForm({
           {/* Error del servidor */}
           {serverError && (
             <div className="px-4 py-3 rounded-xl text-xs font-mono mt-5" style={{ background: "rgba(193,18,31,0.1)", border: "1px solid rgba(193,18,31,0.25)", color: "#e85d74" }}>
-              ⚠️ {serverError}
+              {serverError}
             </div>
           )}
 

@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.modules.auth.models import UsuarioRol
 from app.modules.usuarios.models import Usuario
 from app.modules.usuarios.schemas import (
     UsuarioDetailResponse,
@@ -24,11 +23,9 @@ class UsuarioService:
     # ── Helpers privados ───────────────────────────────────────────────────────
 
     def _get_roles(self, usuario_id: int) -> list[str]:
-        """Carga los roles del usuario desde la tabla usuario_roles."""
-        roles = self._session.exec(
-            select(UsuarioRol.rol_codigo).where(UsuarioRol.usuario_id == usuario_id)
-        ).all()
-        return list(roles)
+        """Carga los roles del usuario a través del repositorio."""
+        from app.modules.usuarios.repository import UsuarioRepository
+        return UsuarioRepository(self._session).get_roles(usuario_id)
 
     def _get_or_404(self, uow: UsuarioUoW, usuario_id: int) -> Usuario:
         """Obtiene un usuario activo o lanza 404."""
@@ -46,7 +43,7 @@ class UsuarioService:
         """Devuelve el perfil completo del usuario autenticado, incluyendo sus roles."""
         with UsuarioUoW(self._session) as uow:
             usuario = self._get_or_404(uow, usuario_id)
-            roles = self._get_roles(usuario_id)
+            roles = uow.usuarios.get_roles(usuario_id)
 
         return UsuarioDetailResponse(
             id=usuario.id,
@@ -185,16 +182,13 @@ class UsuarioService:
         with UsuarioUoW(self._session) as uow:
             usuario = self._get_or_404(uow, usuario_id)
 
-            # Borrar todos los roles actuales
-            self._session.exec(
-                UsuarioRol.__table__.delete().where(UsuarioRol.usuario_id == usuario_id)
-            )
+            # Borrar todos los roles actuales vía repositorio
+            uow.roles.delete_by_usuario(usuario_id)
 
-            # Insertar nuevos
+            # Insertar nuevos roles vía repositorio
             # Si se envía una lista vacía, el usuario se queda sin roles (no recomendado pero posible)
-            roles_set = set(data.roles)
-            for rol in roles_set:
-                self._session.add(UsuarioRol(usuario_id=usuario_id, rol_codigo=rol))
+            for rol in set(data.roles):
+                uow.roles.add_rol(usuario_id=usuario_id, rol_codigo=rol)
             # El __exit__ del UoW hace commit al salir sin excepción
 
         return self.get_me(usuario_id)
@@ -225,13 +219,13 @@ class UsuarioService:
         Permite a un administrador crear un nuevo usuario con roles específicos directamente.
         """
         from app.core.security import get_password_hash
-        
+
         if not data.roles:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Debe asignar al menos un rol al usuario.",
             )
-            
+
         with UsuarioUoW(self._session) as uow:
             # Verificar si ya existe el email
             existing = uow.usuarios.get_by_email(data.email)
@@ -240,8 +234,8 @@ class UsuarioService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Ya existe un usuario registrado con ese email.",
                 )
-                
-            # Crear usuario
+
+            # Crear usuario vía repositorio (add hace flush + refresh internamente)
             nuevo = Usuario(
                 nombre=data.nombre,
                 apellido=data.apellido,
@@ -250,20 +244,18 @@ class UsuarioService:
                 password_hash=get_password_hash(data.password),
                 is_active=True,
             )
-            self._session.add(nuevo)
-            self._session.flush()
-            self._session.refresh(nuevo)
-            
-            # Asignar roles
+            uow.usuarios.add(nuevo)
+
+            # Asignar roles vía repositorio
             for rol_cod in set(data.roles):
-                self._session.add(UsuarioRol(
+                uow.roles.add_rol(
                     usuario_id=nuevo.id,
                     rol_codigo=rol_cod,
-                    asignado_por_id=current_user_id
-                ))
-            
+                    asignado_por_id=current_user_id,
+                )
+
             # El context manager de UoW hará commit de todo al salir
-            
+
         return self.get_me(nuevo.id)
 
     def restaurar(self, usuario_id: int, current_user_id: int) -> UsuarioDetailResponse:

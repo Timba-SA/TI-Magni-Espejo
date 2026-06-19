@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { ProductoFiltersState } from "../types/producto.types";
@@ -79,7 +79,7 @@ export function ProductoFilters({ filters, onChange, categorias }: ProductoFilte
             : { background: "var(--tfs-input-bg)", borderColor: "var(--tfs-input-border)", color: "var(--tfs-text-muted)" }
         }
       >
-        👁 Mostrar archivados
+        <Eye size={14} className="inline-block mr-1" />Mostrar archivados
       </button>
 
       {/* Limpiar */}

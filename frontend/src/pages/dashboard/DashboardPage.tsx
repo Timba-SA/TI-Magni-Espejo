@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Package, AlertTriangle, ArrowRight, LayoutDashboard, Tag, Users, TrendingUp } from "lucide-react";
+import { Package, AlertTriangle, ArrowRight, LayoutDashboard, Tag, Users, TrendingUp, ClipboardList } from "lucide-react";
 import { DashboardCard } from "@/components/admin/DashboardCard";
 import { getCurrentUser } from "@/features/auth/services/authService";
 import { getInsumos } from "@/features/insumos/services/insumosService";
@@ -44,14 +44,23 @@ export function DashboardPage() {
   const total = insumos.length;
   const alergenos = insumos.filter((i: any) => i.es_alergeno).length;
 
+  const userRoles = user?.roles ?? (user?.rol ? [user.rol] : []);
+
   // ─── Configuración de módulos de acceso rápido ─────────────────────────────
   const MODULES = [
+    {
+      to: "/pedidos",
+      label: "Gestión de Pedidos",
+      description: "Visualizá y actualizá el estado de los pedidos en tiempo real.",
+      icon: ClipboardList,
+      visibleFor: ["ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS"],
+    },
     {
       to: "/insumos",
       label: "Gestión de Insumos",
       description: "Administrá el inventario completo. Creá, editá y eliminá insumos.",
       icon: Package,
-      visibleFor: ["ADMIN", "ENCARGADO"],
+      visibleFor: ["ADMIN", "ENCARGADO", "STOCK"],
     },
     {
       to: "/categorias",
@@ -74,7 +83,7 @@ export function DashboardPage() {
       icon: TrendingUp,
       visibleFor: ["ADMIN"],
     },
-  ].filter((m) => !user?.rol || m.visibleFor.includes(user.rol));
+  ].filter((m) => userRoles.some((r) => m.visibleFor.includes(r)));
 
   return (
     <div className="p-6 md:p-8 space-y-10 max-w-5xl mx-auto">

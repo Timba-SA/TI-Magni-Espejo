@@ -5,7 +5,7 @@ from sqlmodel import Session
 from app.core.database import get_session
 from app.core.security import decode_access_token
 from app.core.ws_manager import ws_manager
-from app.modules.pedidos.models import Pedido
+from app.modules.pedidos.repository import PedidoRepository
 
 router = APIRouter(tags=["Pedidos WebSockets"])
 
@@ -41,7 +41,7 @@ async def websocket_endpoint(
         
         # 2. Validación de propiedad del pedido (si se requiere)
         if pedido_id is not None:
-            pedido = session.get(Pedido, pedido_id)
+            pedido = PedidoRepository(session).get_by_id(pedido_id)
             if not pedido or pedido.deleted_at is not None:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Pedido no encontrado.")
                 return

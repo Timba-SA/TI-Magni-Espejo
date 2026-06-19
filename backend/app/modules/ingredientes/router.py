@@ -34,7 +34,7 @@ def listar_ingredientes(
     )
 
 
-# ⚠️ IMPORTANTE: /exportar debe ir ANTES de /{id}
+# IMPORTANTE: /exportar debe ir ANTES de /{id}
 # De lo contrario FastAPI interpreta "exportar" como un entero (id) y devuelve 422.
 @router.get("/exportar", status_code=status.HTTP_200_OK)
 def exportar_ingredientes(

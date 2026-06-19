@@ -13,10 +13,9 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
-from sqlmodel import Session, select, func
+from sqlmodel import Session
 
-from app.modules.pedidos.models import Pedido, DetallePedido
-from app.modules.pagos.models import Pago
+from app.modules.estadisticas.repository import EstadisticasRepository
 from app.modules.estadisticas.schemas import (
     ResumenResponse,
     VentaDiariaResponse,
@@ -52,19 +51,6 @@ def _parse_rango(
     return fecha_inicio, fecha_fin
 
 
-def _pedidos_en_rango(
-    session: Session,
-    fecha_inicio: datetime,
-    fecha_fin: datetime,
-) -> list[Pedido]:
-    stmt = select(Pedido).where(
-        Pedido.created_at >= fecha_inicio,
-        Pedido.created_at <= fecha_fin,
-        Pedido.deleted_at.is_(None),  # type: ignore[attr-defined]
-    )
-    return list(session.exec(stmt).all())
-
-
 # ── EST: resumen ──────────────────────────────────────────────────────────────
 
 def get_resumen(
@@ -73,7 +59,8 @@ def get_resumen(
     fecha_fin_str: Optional[str] = None,
 ) -> ResumenResponse:
     fecha_inicio, fecha_fin = _parse_rango(fecha_inicio_str, fecha_fin_str)
-    pedidos = _pedidos_en_rango(session, fecha_inicio, fecha_fin)
+    repo = EstadisticasRepository(session)
+    pedidos = repo.get_pedidos_en_rango(fecha_inicio, fecha_fin)
 
     cancelados = [p for p in pedidos if p.estado_codigo == "CANCELADO"]
     validos = [p for p in pedidos if p.estado_codigo != "CANCELADO"]  # EST-01
@@ -100,7 +87,8 @@ def get_ventas(
     fecha_fin_str: Optional[str] = None,
 ) -> VentasResponse:
     fecha_inicio, fecha_fin = _parse_rango(fecha_inicio_str, fecha_fin_str)
-    pedidos = _pedidos_en_rango(session, fecha_inicio, fecha_fin)
+    repo = EstadisticasRepository(session)
+    pedidos = repo.get_pedidos_en_rango(fecha_inicio, fecha_fin)
 
     # EST-01: excluir CANCELADO
     validos = [p for p in pedidos if p.estado_codigo != "CANCELADO"]
@@ -138,27 +126,10 @@ def get_productos_top(
     limit: int = 10,
 ) -> ProductosTopResponse:
     fecha_inicio, fecha_fin = _parse_rango(fecha_inicio_str, fecha_fin_str)
+    repo = EstadisticasRepository(session)
 
     # EST-02: usar subtotal_snap; EST-01: excluir CANCELADO
-    stmt = (
-        select(
-            DetallePedido.producto_id,
-            DetallePedido.nombre_snapshot,
-            func.sum(DetallePedido.cantidad).label("cantidad_vendida"),
-            func.sum(DetallePedido.subtotal_snap).label("ingresos_generados"),  # EST-02
-        )
-        .join(Pedido, DetallePedido.pedido_id == Pedido.id)
-        .where(
-            Pedido.created_at >= fecha_inicio,
-            Pedido.created_at <= fecha_fin,
-            Pedido.deleted_at.is_(None),  # type: ignore[attr-defined]
-            Pedido.estado_codigo != "CANCELADO",  # EST-01
-        )
-        .group_by(DetallePedido.producto_id, DetallePedido.nombre_snapshot)
-        .order_by(func.sum(DetallePedido.cantidad).desc())
-        .limit(limit)
-    )
-    rows = session.exec(stmt).all()
+    rows = repo.get_productos_top(fecha_inicio, fecha_fin, limit=limit)
 
     productos = [
         ProductoTopResponse(
@@ -180,7 +151,8 @@ def get_pedidos_por_estado(
     fecha_fin_str: Optional[str] = None,
 ) -> PedidosPorEstadoResponse:
     fecha_inicio, fecha_fin = _parse_rango(fecha_inicio_str, fecha_fin_str)
-    pedidos = _pedidos_en_rango(session, fecha_inicio, fecha_fin)
+    repo = EstadisticasRepository(session)
+    pedidos = repo.get_pedidos_en_rango(fecha_inicio, fecha_fin)
 
     total = len(pedidos)
     conteo: dict[str, int] = {}
@@ -208,14 +180,10 @@ def get_ingresos(
     fecha_fin_str: Optional[str] = None,
 ) -> IngresosResponse:
     fecha_inicio, fecha_fin = _parse_rango(fecha_inicio_str, fecha_fin_str)
+    repo = EstadisticasRepository(session)
 
     # EST-03: solo mp_status == 'approved'
-    stmt = select(Pago).where(
-        Pago.created_at >= fecha_inicio,
-        Pago.created_at <= fecha_fin,
-        Pago.mp_status == "approved",
-    )
-    pagos = list(session.exec(stmt).all())
+    pagos = repo.get_pagos_aprobados_en_rango(fecha_inicio, fecha_fin)
 
     # Agrupar por mes (YYYY-MM)
     por_mes: dict[str, dict] = {}

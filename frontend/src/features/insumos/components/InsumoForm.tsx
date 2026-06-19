@@ -374,7 +374,7 @@ export function InsumoForm({ open, insumo, onClose, onSave, serverError }: Insum
           {/* Error del servidor */}
           {serverError && (
             <div className="px-4 py-3 rounded-xl text-xs font-mono mt-5" style={{ background: "rgba(193,18,31,0.1)", border: "1px solid rgba(193,18,31,0.25)", color: "#e85d74" }}>
-              ⚠️ {serverError}
+              {serverError}
             </div>
           )}
 

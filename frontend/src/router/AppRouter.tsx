@@ -120,7 +120,7 @@ export function AppRouter() {
         <Route
           path="/pedidos"
           element={
-            <ProtectedRoute allowedRoles={["ADMIN", "ENCARGADO", "CAJERO", "COCINERO"]}>
+            <ProtectedRoute allowedRoles={["ADMIN", "ENCARGADO", "CAJERO", "COCINERO", "PEDIDOS"]}>
               <PedidosAdminPage />
             </ProtectedRoute>
           }

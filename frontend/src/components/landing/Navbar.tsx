@@ -402,19 +402,22 @@ export function Navbar() {
   }, [open]);
 
   // Destino del botón de perfil según estado de autenticación
+  const userIsOnlyClient =
+    !user || (user.roles ?? [user.rol]).every((r) => r === "CLIENT");
+
   const profileHref = !isAuthenticated
     ? "/login"
-    : user?.rol === "CLIENT"
+    : userIsOnlyClient
     ? "/perfil"
     : "/home";
 
   const profileTitle = !isAuthenticated
     ? "Iniciar sesión"
-    : user?.rol === "CLIENT"
+    : userIsOnlyClient
     ? "Mi perfil"
     : "Panel de administración";
 
-  const isStaff = isAuthenticated && user?.rol !== "CLIENT";
+  const isStaff = isAuthenticated && !userIsOnlyClient;
 
   return (
     <>

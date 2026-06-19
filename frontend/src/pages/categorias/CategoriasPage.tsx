@@ -194,7 +194,7 @@ function CategoryNode({
 // ─── Página Principal ─────────────────────────────────────────────────────────
 export function CategoriasPage() {
   const user = getCurrentUser();
-  const isAdmin = user?.rol === "ADMIN";
+  const isAdmin = user?.roles?.includes("ADMIN") ?? user?.rol === "ADMIN";
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);

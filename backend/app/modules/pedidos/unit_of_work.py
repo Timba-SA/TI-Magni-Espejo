@@ -8,6 +8,9 @@ from app.modules.pedidos.repository import (
     EstadoPedidoRepository,
     FormaPagoRepository,
 )
+from app.modules.productos.repository import ProductoRepository, ProductoIngredienteRepository
+from app.modules.ingredientes.repository import IngredienteRepository
+from app.modules.direcciones.repository import DireccionRepository
 
 
 class PedidoUoW(UnitOfWork):
@@ -18,3 +21,7 @@ class PedidoUoW(UnitOfWork):
         self.historial = HistorialEstadoPedidoRepository(session)
         self.estados = EstadoPedidoRepository(session)
         self.formas_pago = FormaPagoRepository(session)
+        self.productos = ProductoRepository(session)
+        self.ingredientes = IngredienteRepository(session)
+        self.producto_ingredientes = ProductoIngredienteRepository(session)
+        self.direcciones = DireccionRepository(session)

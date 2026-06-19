@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.modules.productos.models import Producto, ProductoCategoria, ProductoIngrediente, UnidadMedida
 from app.modules.productos.schemas import (
@@ -17,14 +17,19 @@ from app.modules.productos.unit_of_work import ProductoUoW
 
 
 def recalcular_producto_stock_y_precio(session: Session, producto_id: int) -> None:
-    from app.modules.ingredientes.models import Ingrediente
-    
-    producto = session.get(Producto, producto_id)
+    from app.modules.ingredientes.repository import IngredienteRepository
+    from app.modules.productos.repository import ProductoIngredienteRepository, ProductoRepository
+
+    prod_repo = ProductoRepository(session)
+    pi_repo = ProductoIngredienteRepository(session)
+    ing_repo = IngredienteRepository(session)
+
+    producto = prod_repo.get_by_id(producto_id)
     if not producto:
         return
-        
-    receta = session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == producto_id)).all()
-    
+
+    receta = pi_repo.get_by_producto(producto_id)
+
     if not receta:
         producto.stock_cantidad = 0
         producto.precio_base = Decimal("0.00")
@@ -32,26 +37,25 @@ def recalcular_producto_stock_y_precio(session: Session, producto_id: int) -> No
         stocks = []
         precio_total = Decimal("0.00")
         for pi in receta:
-            ingrediente = session.get(Ingrediente, pi.ingrediente_id)
+            ingrediente = ing_repo.get_by_id(pi.ingrediente_id)
             if ingrediente:
                 # Sincronizar unidad_medida_id
                 if pi.unidad_medida_id != ingrediente.unidad_medida_id:
                     pi.unidad_medida_id = ingrediente.unidad_medida_id
-                    session.add(pi)
-                
+                    pi_repo.mark_dirty(pi)
+
                 stock_posible = ingrediente.stock_actual / pi.cantidad
                 stocks.append(stock_posible)
                 precio_total += ingrediente.costo_unitario * pi.cantidad
-        
+
         if stocks:
             producto.stock_cantidad = int(min(stocks))
         else:
             producto.stock_cantidad = 0
         producto.precio_base = precio_total
-        
+
     producto.updated_at = datetime.utcnow()
-    session.add(producto)
-    session.flush()
+    prod_repo.update(producto)
 
 
 
@@ -135,7 +139,7 @@ class UnidadMedidaService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Unidad de medida con id={id} no encontrada.",
                 )
-            self._session.delete(um)
+            uow.unidades_medida.hard_delete(um)
 
 
 # ─── ProductoService ──────────────────────────────────────────────────────────

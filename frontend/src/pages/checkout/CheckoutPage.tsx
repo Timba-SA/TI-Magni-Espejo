@@ -89,7 +89,7 @@ export const CheckoutPage: React.FC = () => {
       navigate("/checkout/success", { state: { pedido: response }, replace: true });
     } catch (error: any) {
       console.error("Error al crear el pedido:", error);
-      const errMsg = error.response?.data?.detail || error.message || "Error al procesar tu pedido. Por favor, intentá nuevamente.";
+      const errMsg = error.message || "Error al procesar tu pedido. Por favor, intentá nuevamente.";
       toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
@@ -239,7 +239,7 @@ export const CheckoutPage: React.FC = () => {
               ) : (
                 <>
                   <Send size={16} />
-                  Realizar Pedido — {formatCurrency(totalPrecio + 350)}
+                  Realizar Pedido — {formatCurrency(totalPrecio)}
                 </>
               )}
             </button>

@@ -117,9 +117,3 @@ export function getSessionRemainingMs(): number {
   return session.expiresAt - Date.now();
 }
 
-export function renewSession(): void {
-  const session = loadSession();
-  if (!session || isSessionExpired(session)) return;
-  session.expiresAt = Date.now() + SESSION_DURATION_MS;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-}

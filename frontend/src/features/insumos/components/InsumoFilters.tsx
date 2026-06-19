@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X, AlertTriangle, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { IngredienteFiltersState } from "../types/insumo.types";
@@ -49,7 +49,7 @@ export function InsumoFilters({ filters, onChange }: InsumoFiltersProps) {
             : { background: "var(--tfs-input-bg)", borderColor: "var(--tfs-input-border)", color: "var(--tfs-text-muted)" }
         }
       >
-        ⚠ Solo alérgenos
+        <AlertTriangle size={14} className="inline-block mr-1" />Solo alérgenos
       </button>
 
       {/* Mostrar inactivos */}
@@ -62,7 +62,7 @@ export function InsumoFilters({ filters, onChange }: InsumoFiltersProps) {
             : { background: "var(--tfs-input-bg)", borderColor: "var(--tfs-input-border)", color: "var(--tfs-text-muted)" }
         }
       >
-        👁 Mostrar inactivos
+        <Eye size={14} className="inline-block mr-1" />Mostrar inactivos
       </button>
 
       {/* Limpiar */}

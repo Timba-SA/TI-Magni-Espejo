@@ -592,7 +592,7 @@ export function PedidosAdminPage() {
                           </p>
                           {excluidosNombres.length > 0 && (
                             <p className="text-[10px] text-red-400 font-mono">
-                              ✕ Sin: {excluidosNombres.join(", ")}
+                              Sin: {excluidosNombres.join(", ")}
                             </p>
                           )}
                         </div>

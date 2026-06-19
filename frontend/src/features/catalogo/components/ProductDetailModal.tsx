@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
+import { X, Check, Lock } from "lucide-react";
 import type { Producto } from "../types/catalogo.types";
 
 interface ProductDetailModalProps {
@@ -124,9 +125,9 @@ export function ProductDetailModal({
                         >
                           <span>{ingrediente.nombre}</span>
                           {estaExcluido ? (
-                            <span className="text-[10px]">✕</span>
+                            <X size={10} />
                           ) : (
-                            <span className="text-[10px] text-green-500">✓</span>
+                            <Check size={10} className="text-green-500" />
                           )}
                         </button>
                       );
@@ -152,7 +153,7 @@ export function ProductDetailModal({
                           className="px-3 py-1.5 rounded-full text-xs font-medium border border-white/5 bg-white/[0.01] text-[#F8F8F8]/40 flex items-center gap-1.5 cursor-not-allowed"
                         >
                           <span>{ingrediente.nombre}</span>
-                          <span className="text-[9px] opacity-60">🔒</span>
+                          <Lock size={9} className="opacity-60" />
                         </div>
                       );
                     })}

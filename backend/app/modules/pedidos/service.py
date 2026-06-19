@@ -2,10 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.modules.productos.models import Producto
-from app.modules.direcciones.models import DireccionEntrega
 from app.modules.pedidos.models import Pedido, DetallePedido, HistorialEstadoPedido, FormaPago, EstadoPedido
 from app.modules.pedidos.schemas import CrearPedidoRequest, AvanzarEstadoRequest
 from app.modules.pedidos.unit_of_work import PedidoUoW
@@ -99,9 +97,8 @@ class PedidoService:
             # 2. Validar dirección si se provee
             costo_envio = Decimal("0.00")
             if data.direccion_id is not None:
-                # Comprobar dirección en DB
-                direccion = self._session.get(DireccionEntrega, data.direccion_id)
-                if not direccion or direccion.usuario_id != usuario_id:
+                direccion = uow.direcciones.get_by_id_and_user(data.direccion_id, usuario_id)
+                if not direccion:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Dirección de entrega inválida o no pertenece al usuario"
@@ -113,12 +110,10 @@ class PedidoService:
             detalles_a_crear = []
             ingredientes_afectados_ids = set()
 
-            from app.modules.productos.models import ProductoIngrediente
-            from app.modules.ingredientes.models import Ingrediente
             from app.modules.productos.service import recalcular_producto_stock_y_precio
 
             for item in data.items:
-                producto = self._session.get(Producto, item.producto_id)
+                producto = uow.productos.get_by_id(item.producto_id)
                 if not producto or not producto.disponible:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
@@ -126,34 +121,34 @@ class PedidoService:
                     )
 
                 # Obtener ingredientes de la receta del producto
-                receta = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == producto.id)).all()
+                receta = uow.producto_ingredientes.get_by_producto(producto.id)
 
                 if receta:
                     for pi in receta:
-                        ingrediente = self._session.get(Ingrediente, pi.ingrediente_id)
+                        ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
                         if not ingrediente:
                             continue
-                        
+
                         cantidad_necesaria = pi.cantidad * Decimal(str(item.cantidad))
                         if ingrediente.stock_actual < cantidad_necesaria:
                             raise HTTPException(
                                 status_code=status.HTTP_400_BAD_REQUEST,
                                 detail=f"Stock insuficiente del ingrediente '{ingrediente.nombre}' para preparar '{producto.nombre}' (requerido: {cantidad_necesaria}, disponible: {ingrediente.stock_actual})"
                             )
-                        
+
                         # Descontar stock del ingrediente
                         ingrediente.stock_actual -= cantidad_necesaria
-                        self._session.add(ingrediente)
+                        uow.ingredientes.mark_dirty(ingrediente)
                         ingredientes_afectados_ids.add(ingrediente.id)
                 else:
-                    # Fallback para compatibilidad con productos sin receta (como en tests previos)
+                    # Fallback para compatibilidad con productos sin receta
                     if producto.stock_cantidad < item.cantidad:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Stock insuficiente para el producto '{producto.nombre}' (disponible: {producto.stock_cantidad})"
                         )
                     producto.stock_cantidad -= item.cantidad
-                    self._session.add(producto)
+                    uow.productos.mark_dirty(producto)
 
                 # Calcular subtotal del detalle
                 precio_snap = producto.precio_base
@@ -199,12 +194,10 @@ class PedidoService:
             uow.flush()
             productos_afectados = set()
             for ing_id in ingredientes_afectados_ids:
-                pi_list = self._session.query(ProductoIngrediente).filter(
-                    ProductoIngrediente.ingrediente_id == ing_id
-                ).all()
+                pi_list = uow.producto_ingredientes.get_by_ingrediente(ing_id)
                 for pi in pi_list:
                     productos_afectados.add(pi.producto_id)
-            
+
             for prod_id in productos_afectados:
                 recalcular_producto_stock_y_precio(self._session, prod_id)
 
@@ -281,40 +274,36 @@ class PedidoService:
 
                 # Devolver stock a los ingredientes o productos si devolver_stock es True
                 if data.devolver_stock:
-                    from app.modules.productos.models import ProductoIngrediente
-                    from app.modules.ingredientes.models import Ingrediente
                     from app.modules.productos.service import recalcular_producto_stock_y_precio
 
                     ingredientes_modificados = set()
                     for det in pedido.detalles:
-                        receta = self._session.exec(select(ProductoIngrediente).where(ProductoIngrediente.producto_id == det.producto_id)).all()
+                        receta = uow.producto_ingredientes.get_by_producto(det.producto_id)
                         if receta:
                             for pi in receta:
-                                ingrediente = self._session.get(Ingrediente, pi.ingrediente_id)
+                                ingrediente = uow.ingredientes.get_by_id(pi.ingrediente_id)
                                 if ingrediente:
                                     cantidad_a_devolver = pi.cantidad * Decimal(str(det.cantidad))
                                     ingrediente.stock_actual += cantidad_a_devolver
-                                    self._session.add(ingrediente)
+                                    uow.ingredientes.mark_dirty(ingrediente)
                                     ingredientes_modificados.add(ingrediente.id)
                         else:
-                            # Fallback para productos sin receta (compatibilidad con tests antiguos)
-                            producto = self._session.get(Producto, det.producto_id)
+                            # Fallback para productos sin receta
+                            producto = uow.productos.get_by_id(det.producto_id)
                             if producto:
                                 producto.stock_cantidad += det.cantidad
-                                self._session.add(producto)
-                    
+                                uow.productos.mark_dirty(producto)
+
                     # Flush e invalidación/recalculación de stock de productos afectados
-                    self._session.flush()
-                    
+                    uow.flush()
+
                     if ingredientes_modificados:
                         productos_afectados = set()
                         for ing_id in ingredientes_modificados:
-                            pi_list = self._session.query(ProductoIngrediente).filter(
-                                ProductoIngrediente.ingrediente_id == ing_id
-                            ).all()
+                            pi_list = uow.producto_ingredientes.get_by_ingrediente(ing_id)
                             for pi in pi_list:
                                 productos_afectados.add(pi.producto_id)
-                                
+
                         for prod_id in productos_afectados:
                             recalcular_producto_stock_y_precio(self._session, prod_id)
 

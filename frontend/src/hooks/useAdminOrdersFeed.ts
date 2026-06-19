@@ -33,6 +33,7 @@ export function useAdminOrdersFeed({
   maxEvents = 50,
 }: UseAdminOrdersFeedOptions = {}) {
   const setStatus = useWSStore((state) => state.setStatus);
+  const wsStatus = useWSStore((state) => state.status);
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const socketRef = useRef<WebSocket | null>(null);
@@ -103,6 +104,12 @@ export function useAdminOrdersFeed({
       setStatus("DISCONNECTED");
       socketRef.current = null;
 
+      // Código 4001 = token expirado o inválido — no tiene sentido reconectar
+      if (e.code === 4001) {
+        console.warn("[AdminWS] Token inválido o expirado. Se cancela la reconexión automática.");
+        return;
+      }
+
       // Backoff exponencial: 1s, 2s, 4s, … hasta 30s
       const attempt = reconnectAttemptRef.current;
       const delay = Math.min(30_000, 1_000 * Math.pow(2, attempt));
@@ -131,7 +138,7 @@ export function useAdminOrdersFeed({
 
   return {
     /** Estado de la conexión WS (CONNECTED / CONNECTING / DISCONNECTED). */
-    status: useWSStore.getState().status,
+    status: wsStatus,
     /** Eventos recientes en orden cronológico inverso (más nuevo primero). */
     events,
     /** Limpia el buffer de eventos en memoria. */

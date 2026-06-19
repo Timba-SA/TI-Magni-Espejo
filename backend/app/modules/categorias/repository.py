@@ -35,6 +35,19 @@ class CategoriaRepository(BaseRepository[Categoria]):
         items = self.session.exec(query.offset(skip).limit(limit)).all()
         return items, total
 
+    def has_active_products(self, categoria_id: int) -> bool:
+        """Verifica si la categoría tiene productos activos asociados."""
+        from app.modules.productos.models import ProductoCategoria, Producto
+        result = self.session.exec(
+            select(ProductoCategoria)
+            .join(Producto, ProductoCategoria.producto_id == Producto.id)
+            .where(
+                ProductoCategoria.categoria_id == categoria_id,
+                Producto.deleted_at == None  # noqa: E711
+            )
+        ).first()
+        return result is not None
+
     def get_by_parent(self, parent_id: Optional[int]) -> list[Categoria]:
         return self.session.exec(
             select(Categoria).where(

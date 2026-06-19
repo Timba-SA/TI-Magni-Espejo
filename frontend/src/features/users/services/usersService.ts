@@ -2,24 +2,11 @@ import { fetchApi, handleTokenExpired } from "@/shared/api/apiClient";
 import type {
   UsuarioDetailResponse,
   UsuarioResponse,
-  UsuarioUpdateRequest,
   UsuarioCreateRequest,
 } from "../types/user.types";
 
-/** Perfil propio del usuario autenticado (incluye roles). */
-export async function getMe(): Promise<UsuarioDetailResponse> {
-  return fetchApi<UsuarioDetailResponse>("/usuarios/me");
-}
-
-/** Actualiza el perfil propio (nombre, apellido, celular). */
-export async function updateMe(
-  data: UsuarioUpdateRequest
-): Promise<UsuarioResponse> {
-  return fetchApi<UsuarioResponse>("/usuarios/me", {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-}
+// El perfil propio (/usuarios/me) se gestiona en profileService.ts
+// para no duplicar la lógica. Usar getMiPerfil() / actualizarPerfil() de allí.
 
 /** Lista todos los usuarios con filtros opcionales. Solo ADMIN. */
 export async function getUsuarios(

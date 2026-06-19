@@ -105,9 +105,6 @@ class CategoriaService:
         return categoria
 
     def eliminar(self, id: int) -> None:
-        from app.modules.productos.models import Producto, ProductoCategoria
-        from sqlmodel import select
-
         with CategoriaUoW(self._session) as uow:
             categoria = uow.categorias.get_by_id(id)
             if not categoria or categoria.deleted_at is not None:
@@ -115,18 +112,9 @@ class CategoriaService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Categoría con id={id} no encontrada.",
                 )
-            
-            # Convalidación de eliminación suave: no se puede eliminar si tiene productos activos (HTTP 409)
-            productos_activos = self._session.exec(
-                select(ProductoCategoria)
-                .join(Producto, ProductoCategoria.producto_id == Producto.id)
-                .where(
-                    ProductoCategoria.categoria_id == id,
-                    Producto.deleted_at == None
-                )
-            ).first()
 
-            if productos_activos:
+            # Convalidación de eliminación suave: no se puede eliminar si tiene productos activos (HTTP 409)
+            if uow.categorias.has_active_products(id):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="No se puede eliminar la categoría porque tiene productos activos asociados."

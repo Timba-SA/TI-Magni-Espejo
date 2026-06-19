@@ -74,7 +74,7 @@ import {
 // ─── Página principal ─────────────────────────────────────────────────────────
 export function InsumosPage() {
   const user = getCurrentUser();
-  const isAdmin = user?.rol === "ADMIN";
+  const isAdmin = user?.roles?.includes("ADMIN") ?? user?.rol === "ADMIN";
 
   const [skip, setSkip] = useState(0);
   const [limit, setLimit] = useState(20);
@@ -153,7 +153,7 @@ export function InsumosPage() {
       setFormOpen(false);
       setSelectedInsumo(null);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || "Error al guardar el ingrediente";
+      const msg = err.message || "Error al guardar el ingrediente";
       setSaveError(msg);
       console.error("handleSave error:", err);
     }

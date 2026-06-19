@@ -9,11 +9,12 @@ import type { Direccion, DireccionCreateRequest, PedidoResponse } from "@/featur
 
 export interface UsuarioPerfil {
   id: number;
-  username: string;
+  /** El backend no devuelve username en /usuarios/me — puede estar ausente. */
+  username?: string;
   email: string;
   nombre: string;
-  apellido?: string;
-  celular?: string;
+  apellido: string;
+  celular?: string | null;
   roles: string[];
 }
 

@@ -7,8 +7,14 @@ interface AdminHeaderProps {
 }
 
 const ROUTE_LABELS: Record<string, { title: string; section: string }> = {
-  "/home":    { title: "Dashboard",          section: "Vista general"    },
-  "/insumos": { title: "Gestión de Insumos", section: "Inventario"       },
+  "/home":         { title: "Dashboard",             section: "Vista general"  },
+  "/insumos":      { title: "Gestión de Insumos",    section: "Inventario"     },
+  "/categorias":   { title: "Gestión de Categorías", section: "Inventario"     },
+  "/productos":    { title: "Gestión de Productos",  section: "Carta"          },
+  "/pedidos":      { title: "Gestión de Pedidos",    section: "Operaciones"    },
+  "/usuarios":     { title: "Gestión de Usuarios",   section: "Administración" },
+  "/estadisticas": { title: "Estadísticas",           section: "Reportes"       },
+  "/perfil-admin": { title: "Mi Perfil",              section: "Cuenta"         },
 };
 
 export function AdminHeader({ onMenuToggle }: AdminHeaderProps) {

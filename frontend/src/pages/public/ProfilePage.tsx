@@ -216,11 +216,13 @@ function DatosPersonalesSection({ perfil, onUpdate }: {
           disabled={!editing}
           placeholder="Sin celular cargado"
         />
-        <ProfileInput
-          label="Usuario"
-          value={perfil.username}
-          disabled
-        />
+        {perfil.username && (
+          <ProfileInput
+            label="Usuario"
+            value={perfil.username}
+            disabled
+          />
+        )}
       </div>
 
       <AnimatePresence>
