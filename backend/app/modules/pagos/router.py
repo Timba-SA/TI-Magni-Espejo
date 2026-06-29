@@ -6,7 +6,6 @@ from app.core.database import get_session
 from app.core.dependencies import get_current_user
 from app.modules.pagos.schemas import IniciarPagoRequest, WebhookPayload, PreferenceResponse, PagoResponse
 from app.modules.pagos.service import PagoService
-from app.modules.pagos.unit_of_work import PagoUoW
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
 
@@ -54,10 +53,4 @@ def obtener_pagos_pedido(
     """
     usuario_id = current_user["sub"]
     roles = current_user.get("roles", [])
-    
-    # Validar propiedad o permisos usando el PedidoService antes de devolver los pagos
-    from app.modules.pedidos.service import PedidoService
-    PedidoService(session).get_pedido(pedido_id, usuario_id, roles)
-    
-    with PagoUoW(session) as uow:
-        return uow.pagos.get_by_pedido(pedido_id)
+    return PagoService(session).get_pagos_pedido(pedido_id, usuario_id, roles)

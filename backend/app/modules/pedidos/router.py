@@ -74,6 +74,12 @@ async def avanzar_estado(
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancelar_pedido(id: int, session: SessionDep, current_user: CurrentUser):
+    from app.modules.pedidos.schemas import AvanzarEstadoRequest
     usuario_id = current_user["sub"]
     roles = current_user.get("roles", [])
-    PedidoService(session).cancelar(id, usuario_id, roles)
+    PedidoService(session).avanzar_estado(
+        id,
+        usuario_id,
+        roles,
+        AvanzarEstadoRequest(estado_hacia="CANCELADO", motivo="Cancelado via DELETE")
+    )
