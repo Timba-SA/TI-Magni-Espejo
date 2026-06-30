@@ -159,6 +159,11 @@ class PagoService:
                 init_point=init_point
             )
 
+    def get_pagos_pedido(self, pedido_id: int, usuario_id: int, roles: list[str]) -> list:
+        PedidoService(self._session).get_pedido(pedido_id, usuario_id, roles)
+        with PagoUoW(self._session) as uow:
+            return uow.pagos.get_by_pedido(pedido_id)
+
     async def procesar_webhook(self, payload: WebhookPayload, signature_header: Optional[str]) -> None:
         """
         Procesa notificaciones webhooks asíncronas de MercadoPago de forma segura.
