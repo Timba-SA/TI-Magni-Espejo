@@ -424,8 +424,8 @@ function DireccionesSection() {
               <ProfileInput label="Alias (ej: Casa)" value={newForm.alias} onChange={(v) => setNewForm((f) => ({ ...f, alias: v }))} placeholder="Opcional" />
               <ProfileInput label="Calle y número *" value={newForm.linea1} onChange={(v) => setNewForm((f) => ({ ...f, linea1: v }))} placeholder="Av. Corrientes 1234" />
               <ProfileInput label="Piso / Depto" value={newForm.linea2} onChange={(v) => setNewForm((f) => ({ ...f, linea2: v }))} placeholder="Opcional" />
-              <ProfileInput label="Ciudad *" value={newForm.ciudad} onChange={(v) => setNewForm((f) => ({ ...f, ciudad: v }))} placeholder="Buenos Aires" />
-              <ProfileInput label="Provincia" value={newForm.provincia} onChange={(v) => setNewForm((f) => ({ ...f, provincia: v }))} placeholder="CABA" />
+              <ProfileInput label="Ciudad *" value={newForm.ciudad} onChange={(v) => setNewForm((f) => ({ ...f, ciudad: v }))} placeholder="Godoy Cruz" />
+              <ProfileInput label="Provincia" value={newForm.provincia} onChange={(v) => setNewForm((f) => ({ ...f, provincia: v }))} placeholder="Mendoza" />
               <ProfileInput label="Código Postal" value={newForm.codigo_postal} onChange={(v) => setNewForm((f) => ({ ...f, codigo_postal: v }))} placeholder="1000" />
               {newError && (
                 <p style={{ gridColumn: "1 / -1", fontFamily: MONO, fontSize: "11px", color: "#f87171" }}>{newError}</p>

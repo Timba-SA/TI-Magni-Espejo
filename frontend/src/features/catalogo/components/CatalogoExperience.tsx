@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X } from "lucide-react";
 
@@ -26,13 +26,18 @@ export function CatalogoExperience() {
   const { addItem } = useCart();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  
+
   const [selectedCategoriaId, setSelectedCategoriaId] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // refreshKey se incrementa para forzar un re-fetch sin cambiar filtros ni búsqueda.
+  // Lo usan los listeners de visibilidad y BroadcastChannel para actualizar precios en tiempo real.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   // Cargar las categorías del local al montar el componente
   useEffect(() => {
@@ -62,7 +67,37 @@ export function CatalogoExperience() {
     }, 250); // Debounce de 250ms para evitar spam al escribir
 
     return () => clearTimeout(timer);
-  }, [selectedCategoriaId, searchQuery]);
+  }, [selectedCategoriaId, searchQuery, refreshKey]);
+
+  // Sincronización en tiempo real de precios sin necesidad de autenticación:
+  //
+  // 1. visibilitychange: cuando el usuario vuelve a este tab después de actualizar
+  //    un ingrediente en otra pestaña, refetchea los productos de inmediato.
+  //
+  // 2. BroadcastChannel "tfs-catalogo": cuando useInsumoUpdateMutation tiene éxito,
+  //    emite un mensaje en este canal. El menú lo recibe y actualiza los precios
+  //    al instante, incluso si el usuario nunca cambió de tab.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        triggerRefresh();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel("tfs-catalogo");
+      channel.onmessage = () => triggerRefresh();
+    } catch {
+      // Entorno sin soporte de BroadcastChannel — se omite silenciosamente.
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      channel?.close();
+    };
+  }, [triggerRefresh]);
 
   const accentColor = ACCENT_COLORS["platos"]; // Naranja magma gourmet
   const bgTint = BG_TINTS["platos"];

@@ -13,6 +13,11 @@ export const useProductosQuery = () => {
   return useQuery<Producto[]>({
     queryKey: ["productos"],
     queryFn: () => getProductos(0, 500, undefined, true),
+    // Refetchea cuando el tab/ventana recupera el foco.
+    // Anula el `refetchOnWindowFocus: false` global del QueryClient.
+    // Esto garantiza que si el usuario actualiza un ingrediente en otra pestaña
+    // y vuelve a esta, los precios se actualizan automáticamente sin F5.
+    refetchOnWindowFocus: true,
   });
 };
 

@@ -38,20 +38,27 @@ class WSManager:
                     self.disconnect(room, connection)
 
     def broadcast_sync(self, room: str, message: dict):
-        # Si no hay loop o el loop está cerrado, intentar obtener el loop de la ejecución actual
-        if not self.loop or self.loop.is_closed():
-            try:
-                self.loop = asyncio.get_running_loop()
-            except RuntimeError:
-                return
+        """
+        Envía un mensaje a una sala desde un contexto sincrónico (thread pool de FastAPI).
 
-        # Intentar programar la tarea en el loop
-        try:
-            self.loop.create_task(self.broadcast(room, message))
-        except RuntimeError:
+        loop.create_task() NO es thread-safe: si el endpoint es `def` (no `async def`),
+        FastAPI lo ejecuta en un thread pool separado del event loop, por lo que
+        create_task() puede fallar silenciosamente.
+
+        run_coroutine_threadsafe() ES thread-safe y funciona correctamente tanto desde
+        threads externos como desde el propio thread del event loop.
+        """
+        loop = self.loop
+        if not loop or loop.is_closed():
             try:
-                asyncio.run_coroutine_threadsafe(self.broadcast(room, message), self.loop)
-            except Exception:
-                pass
+                loop = asyncio.get_running_loop()
+                self.loop = loop
+            except RuntimeError:
+                return  # Sin event loop disponible, no hay nada que hacer
+
+        try:
+            asyncio.run_coroutine_threadsafe(self.broadcast(room, message), loop)
+        except Exception:
+            pass
 
 ws_manager = WSManager()

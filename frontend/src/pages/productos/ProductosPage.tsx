@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useCatalogoWS } from "@/hooks/useCatalogoWS";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductoFilters } from "@/features/productos/components/ProductoFilters";
@@ -75,6 +76,10 @@ function ConfirmArchiveModal({
 
 // ─── Página principal de Productos ───────────────────────────────────────────
 export function ProductosPage() {
+  // Sincronización en tiempo real: invalida la caché cuando un ingrediente
+  // es actualizado en otra pestaña y el backend recalcula el precio del producto.
+  useCatalogoWS();
+
   const user = getCurrentUser();
   const isAdmin = user?.roles?.includes("ADMIN") ?? user?.rol === "ADMIN";
 

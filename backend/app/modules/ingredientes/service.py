@@ -71,6 +71,11 @@ class IngredienteService:
             return uow.ingredientes.add(obj)
 
     def actualizar(self, id: int, data: IngredienteUpdate) -> Ingrediente:
+        from app.modules.productos.service import recalcular_producto_stock_y_precio
+        from app.core.ws_manager import ws_manager
+
+        productos_afectados: list[int] = []
+
         with IngredienteUoW(self._session) as uow:
             obj = self._get_or_404(uow, id)
             update_data = data.model_dump(exclude_unset=True)
@@ -79,14 +84,22 @@ class IngredienteService:
             obj.updated_at = datetime.now(timezone.utc)
             updated_obj = uow.ingredientes.update(obj)
 
-            # Recalcular productos que usan este ingrediente en su receta
-            from app.modules.productos.service import recalcular_producto_stock_y_precio
-
+            # Recalcular productos que usan este ingrediente en su receta.
+            # Guardamos los IDs afectados para notificar por WS DESPUÉS del commit.
             recetas = uow.producto_ingredientes.get_by_ingrediente(id)
             for r in recetas:
                 recalcular_producto_stock_y_precio(self._session, r.producto_id)
+                productos_afectados.append(r.producto_id)
 
-            return updated_obj
+        # El commit ya ocurrió al salir del `with`.
+        # Recién ahora notificamos al frontend para que refetchee datos ya persistidos.
+        for producto_id in productos_afectados:
+            ws_manager.broadcast_sync("catalogo", {
+                "event": "PRODUCTO_ACTUALIZADO",
+                "producto_id": producto_id,
+            })
+
+        return updated_obj
 
     def toggle_active(self, id: int) -> Ingrediente:
         """

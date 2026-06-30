@@ -57,6 +57,15 @@ export const useInsumoUpdateMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["insumos"] });
       queryClient.invalidateQueries({ queryKey: ["productos"] });
+      // Notificar a otras pestañas (ej: /menu) que los precios cambiaron.
+      // BroadcastChannel funciona entre tabs del mismo origen sin necesidad de auth.
+      try {
+        const ch = new BroadcastChannel("tfs-catalogo");
+        ch.postMessage({ event: "PRODUCTO_ACTUALIZADO" });
+        ch.close();
+      } catch {
+        // BroadcastChannel no soportado en este entorno — se ignora silenciosamente.
+      }
     },
   });
 };

@@ -20,6 +20,7 @@ from app.modules.admin.router import router as admin_router
 from app.modules.uploads.router import router as uploads_router
 from app.modules.estadisticas.router import router as estadisticas_router
 from app.modules.pedidos.ws_router import router as pedidos_ws_router
+from app.modules.ingredientes.ws_router import router as catalogo_ws_router
 
 
 @asynccontextmanager
@@ -80,5 +81,6 @@ app.include_router(uploads_router, prefix="/api/v1")
 app.include_router(pedidos_router, prefix="/api/v1")
 app.include_router(pagos_router, prefix="/api/v1")
 
-# WebSockets — sin prefijo /api/v1 para mantener /ws/pedidos directo
+# WebSockets — sin prefijo /api/v1 para mantener /ws/pedidos y /ws/catalogo directos
 app.include_router(pedidos_ws_router)
+app.include_router(catalogo_ws_router)
